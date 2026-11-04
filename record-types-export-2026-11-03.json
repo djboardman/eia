@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-11-03T22:17:13.513Z",
+  "categories": [
+    {
+      "id": "dad8fcdf-41bb-45c5-ae0c-44b832dcf8cd",
+      "name": "Finance",
+      "recordTypes": [
+        {
+          "definitionId": "496d343e-9374-4976-8b8b-c28fde898086",
+          "name": "JournalEntry",
+          "attributes": [
+            {
+              "definitionId": "1663ff57-73c7-4cb8-877d-9b045dd8b506",
+              "name": "description",
+              "dataType": "string",
+              "required": false,
+              "nullable": true
+            }
+          ],
+          "relationshipAttributes": [],
+          "children": [
+            {
+              "definitionId": "6aa93659-85cc-4a23-ae27-a3e336d812d9",
+              "name": "JournalEntryItem",
+              "attributes": [
+                {
+                  "definitionId": "3cb6f586-f703-45ff-a541-15a9d9651200",
+                  "name": "localCurrencyAmount",
+                  "dataType": "string",
+                  "required": false,
+                  "nullable": true
+                }
+              ],
+              "relationshipAttributes": [],
+              "children": [],
+              "subtypes": [
+                {
+                  "definitionId": "2466a051-db5f-43c8-b13d-ba3624ecd66e",
+                  "name": "GlItem",
+                  "attributes": [],
+                  "relationshipAttributes": [
+                    {
+                      "definitionId": "ec31e018-750e-4e65-9931-6fdaffbb3c8e",
+                      "recordTypeDefinitionId": "496d343e-9374-4976-8b8b-c28fde898086",
+                      "attributeDefinitionId": "1663ff57-73c7-4cb8-877d-9b045dd8b506"
+                    }
+                  ],
+                  "children": [],
+                  "subtypes": []
+                }
+              ]
+            }
+          ],
+          "subtypes": []
+        }
+      ]
+    },
+    {
+      "id": "39ba3c0c-f674-461a-969e-50413da6bbaa",
+      "name": "Parties",
+      "recordTypes": [
+        {
+          "definitionId": "5b95823d-bdc4-40a3-9429-812f14233aa2",
+          "name": "Customer",
+          "attributes": [],
+          "relationshipAttributes": [],
+          "children": [],
+          "subtypes": [
+            {
+              "definitionId": "1c906400-5e18-4dd0-a96d-1e78579c3c66",
+              "name": "BusinessCustomer",
+              "attributes": [],
+              "relationshipAttributes": [],
+              "children": [],
+              "subtypes": []
+            },
+            {
+              "definitionId": "0e2ee7e1-bc72-40ae-82b4-aba8f8845232",
+              "name": "ConsumerCustomer",
+              "attributes": [],
+              "relationshipAttributes": [],
+              "children": [],
+              "subtypes": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "df9a4bae-156c-4c7a-91f8-f9604879b81f",
+      "name": "People & Entities",
+      "recordTypes": [
+        {
+          "definitionId": "bdce1aba-666d-4f1d-b0e5-ef3c7028c263",
+          "name": "Person",
+          "attributes": [],
+          "relationshipAttributes": [],
+          "children": [],
+          "subtypes": []
+        },
+        {
+          "definitionId": "c1976ce7-7599-4176-ba93-905a812573e7",
+          "name": "Company",
+          "attributes": [],
+          "relationshipAttributes": [],
+          "children": [],
+          "subtypes": [
+            {
+              "definitionId": "73859d6d-89eb-4254-8645-f03a8181c7c1",
+              "name": "RegisteredCompaany",
+              "attributes": [],
+              "relationshipAttributes": [],
+              "children": [],
+              "subtypes": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

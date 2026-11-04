@@ -1,0 +1,168 @@
+:root {
+  font-family: 'IBM Plex Sans Variable', sans-serif;
+  color: #18212f;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.workspace-sidebar {
+  resize: horizontal;
+}
+
+.workspace-sidebar > [hidden] {
+  display: none !important;
+}
+
+.tree-node {
+  overflow-wrap: anywhere;
+}
+
+.tree-category-row,
+.tree-root-row {
+  list-style: none;
+}
+
+.tree-category-row::-webkit-details-marker,
+.tree-root-row::-webkit-details-marker {
+  display: none;
+}
+
+.tree-node details[open] > summary > .tree-chevron {
+  transform: rotate(90deg);
+}
+
+.tree-root-row:hover > .tree-actions,
+.tree-root-row:focus-within > .tree-actions,
+.tree-category-row:hover > .tree-actions,
+.tree-category-row:focus-within > .tree-actions,
+.tree-record-type:hover > .tree-actions,
+.tree-record-type:focus-within > .tree-actions {
+  opacity: 1;
+}
+
+.attribute-row.is-drop-target {
+  box-shadow: inset 0 2px #2563eb;
+}
+
+.schema-fixed-row:not(:last-child),
+.attribute-list > li:not(:last-child) {
+  border-bottom: 1px solid #94a3b8;
+}
+
+.schema-type {
+  justify-self: start;
+  width: max-content;
+}
+
+.attribute-row .schema-constraints,
+.inherited-attribute-row .schema-constraints {
+  flex-wrap: nowrap;
+}
+
+.attribute-row .attribute-drag-icon,
+.schema-fixed-row .schema-lock-icon,
+.inherited-attribute-row .inherited-attribute-icon,
+.relationship-attribute-row .relationship-icon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.attribute-row .attribute-name,
+.schema-fixed-row .schema-attribute-name,
+.inherited-attribute-row .schema-attribute-name,
+.relationship-attribute-row .relationship-attribute-name {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.attribute-row .attribute-type,
+.schema-fixed-row .schema-type,
+.inherited-attribute-row .schema-type,
+.relationship-attribute-row .schema-type {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.attribute-row .schema-constraints,
+.inherited-attribute-row .inherited-origin,
+.relationship-attribute-row .relationship-mode-switch {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  margin-left: 0;
+}
+
+.inherited-attribute-row .schema-constraints {
+  grid-column: 3;
+  grid-row: 2;
+  margin-left: 0;
+}
+
+.schema-fixed-row .schema-fixed-value {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.schema-fixed-row .schema-constraints {
+  grid-column: 3;
+  grid-row: 2;
+  margin-left: 0;
+}
+
+.attribute-row .attribute-delete-action,
+.relationship-attribute-row .attribute-delete-action {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+@media (max-width: 700px) {
+  .workspace-content {
+    padding: 1rem;
+  }
+
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .attribute-row {
+    height: auto;
+    grid-template-columns: auto minmax(0, 1fr) 7rem auto;
+    min-height: 5rem;
+  }
+
+  .attribute-row .schema-constraints {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    margin-left: 0;
+  }
+
+  .attribute-row .attribute-delete-action {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .relationship-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .inherited-attribute-row {
+    height: auto;
+    min-height: 5rem;
+  }
+}
