@@ -1,4 +1,4 @@
-import { ArrowLeftRight, GripVertical, LockKeyhole, Link2, Plus, Shapes } from 'lucide'
+import { ArrowLeftRight, ChevronRight, GripVertical, LockKeyhole, Link2, Plus, Shapes } from 'lucide'
 import type { AttributeDefinition, RecordType, RecordTypeKind, RelationshipAttributeDefinition } from '../../models/record-type'
 import { recordTypeIdAttributeDefinitionId, rootRecordTypeDefinitionId, type Workspace } from '../../domain/workspace'
 import { getDataTypeOptions, resolveDataTypeName } from '../../domain/data-types'
@@ -26,6 +26,7 @@ interface RecordTypePageDependencies {
 export const createRecordTypePage = ({ workspace, content, dispatch, render }: RecordTypePageDependencies) => {
   let draggedAttributeId: string | null = null
   const relationshipSelectorViews = new Map<string, boolean>()
+  const attributeGroupViews = new Map<string, boolean>()
 const findRecordTypeContext = (definitionId: string): RecordTypeContext | undefined =>
   selectRecordTypeContext(workspace, definitionId)
 const findRecordType = (definitionId: string) => selectRecordType(workspace, definitionId)
@@ -34,9 +35,16 @@ const resolveRelationshipAttribute = (relationship: RelationshipAttributeDefinit
   selectRelationshipAttribute(workspace, relationship)
 const resolvedAttributesFor = (recordType: RecordType) => selectResolvedAttributes(workspace, recordType)
 
+const createSchemaBadge = (label: string) => {
+  const badge = document.createElement('span')
+  badge.className = 'schema-badge'
+  badge.textContent = label
+  return badge
+}
+
 const createAttributeRow = (recordType: RecordType, attribute: AttributeDefinition) => {
   const row = document.createElement('li')
-  row.className = 'attribute-row'
+  row.className = 'attribute-row attribute-row-standard'
   row.draggable = true
   row.dataset.attributeId = attribute.definitionId
   row.append(createLucideIcon(GripVertical, 'attribute-drag-icon'))
@@ -103,6 +111,7 @@ const createAttributeRow = (recordType: RecordType, attribute: AttributeDefiniti
   const constraints = document.createElement('div')
   constraints.className = 'schema-constraints'
   constraints.append(
+    createSchemaBadge('Optional'),
     createConstraintButton(attribute.nullable ? 'Nullable' : 'Not nullable', !attribute.nullable, () => {
       dispatch({
         type: 'attribute.update',
@@ -162,7 +171,7 @@ const createRelationshipAttributeRow = (
   relationship: RelationshipAttributeDefinition,
 ) => {
   const row = document.createElement('li')
-  row.className = 'relationship-attribute-row'
+  row.className = 'attribute-row attribute-row-relationship relationship-attribute-row'
   row.dataset.attributeId = relationship.definitionId
 
   const resolved = resolveRelationshipAttribute(relationship)
@@ -256,6 +265,10 @@ const createRelationshipAttributeRow = (
   controls.className = 'relationship-controls'
   controls.append(source, role, attribute)
 
+  const constraints = document.createElement('div')
+  constraints.className = 'schema-constraints'
+  constraints.append(createSchemaBadge('Optional'))
+
   const switchView = document.createElement('button')
   switchView.className = 'attribute-mode-switch relationship-mode-switch'
   switchView.type = 'button'
@@ -288,14 +301,14 @@ const createRelationshipAttributeRow = (
     },
   )
 
-  row.append(createLucideIcon(Link2, 'relationship-icon'), name, type, switchView, deleteButton)
+  row.append(createLucideIcon(Link2, 'relationship-icon'), name, type, switchView, constraints, deleteButton)
   if (selectorOpen) row.append(controls)
   return row
 }
 
-const createFixedSchemaRow = (name: string, value?: string) => {
+const createFixedSchemaRow = (name: string) => {
   const row = document.createElement('div')
-  row.className = 'schema-fixed-row'
+  row.className = 'attribute-row attribute-row-fixed schema-fixed-row'
   const field = document.createElement('strong')
   field.className = 'schema-attribute-name'
   field.textContent = name
@@ -304,29 +317,16 @@ const createFixedSchemaRow = (name: string, value?: string) => {
   dataType.textContent = 'string'
   row.append(createLucideIcon(LockKeyhole, 'schema-lock-icon'), field, dataType)
 
-  if (value) {
-    const fixedValue = document.createElement('code')
-    fixedValue.className = 'schema-fixed-value'
-    fixedValue.textContent = `= "${value}"`
-    row.append(fixedValue)
-  }
-
   const constraints = document.createElement('div')
   constraints.className = 'schema-constraints'
-  const required = document.createElement('span')
-  required.className = 'schema-badge'
-  required.textContent = 'Required'
-  const nullable = document.createElement('span')
-  nullable.className = 'schema-badge'
-  nullable.textContent = 'Not nullable'
-  constraints.append(required, nullable)
+  constraints.append(createSchemaBadge('Required'), createSchemaBadge('Not nullable'))
   row.append(constraints)
   return row
 }
 
 const createInheritedAttributeRow = (attribute: AttributeDefinition, source: string) => {
   const row = document.createElement('li')
-  row.className = 'inherited-attribute-row'
+  row.className = 'attribute-row attribute-row-inherited inherited-attribute-row'
   const name = document.createElement('strong')
   name.className = 'schema-attribute-name'
   name.textContent = attribute.name
@@ -335,13 +335,13 @@ const createInheritedAttributeRow = (attribute: AttributeDefinition, source: str
   dataType.textContent = resolveDataTypeName(workspace, attribute.dataTypeDefinitionId) ?? '—'
   const origin = document.createElement('span')
   origin.className = 'inherited-origin technical-name'
-  origin.textContent = `from ${source}`
+  origin.textContent = `Inherited from ${source}`
   const constraints = document.createElement('div')
   constraints.className = 'schema-constraints'
-  const nullable = document.createElement('span')
-  nullable.className = 'schema-badge'
-  nullable.textContent = attribute.nullable ? 'Nullable' : 'Not nullable'
-  constraints.append(nullable)
+  constraints.append(
+    createSchemaBadge('Optional'),
+    createSchemaBadge(attribute.nullable ? 'Nullable' : 'Not nullable'),
+  )
   row.append(createLucideIcon(Shapes, 'inherited-attribute-icon'), name, dataType, origin, constraints)
   return row
 }
@@ -376,7 +376,8 @@ const renderRecordTypeDesigner = (
     : parentRecordType
       ? 'child'
       : 'root'
-  titleLine.append(createRecordTypeIcon(relationship), heading)
+  const titleIcon = createRecordTypeIcon(relationship, false, 'title')
+  titleLine.append(titleIcon, heading)
   titleGroup.append(titleLine)
   if (inheritedFrom.length > 0) {
     const supertypeHierarchy = document.createElement('p')
@@ -411,18 +412,32 @@ const renderRecordTypeDesigner = (
   const schema = document.createElement('section')
   schema.className = 'schema-card'
 
+  const dataHeader = document.createElement('header')
+  dataHeader.className = 'attributes-header'
+  const dataTitle = document.createElement('h3')
+  dataTitle.className = 'attributes-title'
+  dataTitle.textContent = 'data'
+  dataHeader.append(dataTitle)
+
   const fixedFields = document.createElement('div')
   fixedFields.className = 'schema-fixed-fields'
-  fixedFields.append(createFixedSchemaRow('id'), createFixedSchemaRow('type', recordType.name))
+  fixedFields.append(createFixedSchemaRow('id'), createFixedSchemaRow('type'))
 
-  const inheritedAttributes = inheritedFrom.flatMap((parent) =>
-    resolvedAttributesFor(parent).map((attribute) => ({ attribute, source: parent.name })),
-  )
+  const inheritedAttributes = inheritedFrom
+    .filter(({ definitionId }) => definitionId !== rootRecordTypeDefinitionId)
+    .flatMap((parent) =>
+      resolvedAttributesFor(parent).map((attribute) => ({ attribute, source: parent.name })),
+    )
+  const recordAttributes = inheritedFrom
+    .filter(({ definitionId }) => definitionId === rootRecordTypeDefinitionId)
+    .flatMap((parent) =>
+      resolvedAttributesFor(parent).map((attribute) => ({ attribute, source: parent.name })),
+    )
   const attributesHeader = document.createElement('header')
   attributesHeader.className = 'attributes-header'
   const attributesTitle = document.createElement('h3')
   attributesTitle.className = 'attributes-title'
-  attributesTitle.textContent = 'attributes'
+  attributesTitle.textContent = 'data.attributes'
   const addButton = document.createElement('button')
   addButton.className = 'tree-action'
   addButton.type = 'button'
@@ -466,27 +481,59 @@ const renderRecordTypeDesigner = (
   attributeActions.append(addButton, addRelationshipButton)
   attributesHeader.append(attributesTitle, attributeActions)
 
-  const attributeList = document.createElement('ul')
-  attributeList.className = 'attribute-list'
-  for (const { attribute, source } of inheritedAttributes) {
-    attributeList.append(createInheritedAttributeRow(attribute, source))
+  const attributeGroups = document.createElement('div')
+  attributeGroups.className = 'attribute-groups'
+  const appendAttributeGroup = (key: string, title: string, rows: HTMLElement[]) => {
+    if (rows.length === 0) return
+    const viewKey = `${recordType.definitionId}:${key}`
+    const group = document.createElement('details')
+    group.className = 'attribute-group'
+    group.open = attributeGroupViews.get(viewKey) ?? true
+    group.addEventListener('toggle', () => attributeGroupViews.set(viewKey, group.open))
+    const heading = document.createElement('summary')
+    heading.className = 'attribute-group-title'
+    const headingText = document.createElement('span')
+    headingText.textContent = title
+    heading.append(createLucideIcon(ChevronRight, 'attribute-group-chevron'), headingText)
+    const list = document.createElement('ul')
+    list.className = 'attribute-list'
+    list.append(...rows)
+    group.append(heading, list)
+    attributeGroups.append(group)
   }
-  for (const attribute of recordType.attributes) {
-    attributeList.append(createAttributeRow(recordType, attribute))
-  }
-  for (const relationship of recordType.relationshipAttributes) {
-    attributeList.append(createRelationshipAttributeRow(recordType, relationship))
-  }
+
+  appendAttributeGroup(
+    'direct',
+    'Direct attributes',
+    recordType.attributes.map((attribute) => createAttributeRow(recordType, attribute)),
+  )
+  appendAttributeGroup(
+    'relationships',
+    'Relationship attributes',
+    recordType.relationshipAttributes.map((relationship) =>
+      createRelationshipAttributeRow(recordType, relationship)),
+  )
+  appendAttributeGroup(
+    'inherited',
+    'Inherited attributes',
+    inheritedAttributes.map(({ attribute, source }) => createInheritedAttributeRow(attribute, source)),
+  )
+  appendAttributeGroup(
+    'record',
+    'Record attributes',
+    recordAttributes.map(({ attribute, source }) => createInheritedAttributeRow(attribute, source)),
+  )
 
   if (
     inheritedAttributes.length === 0 &&
+    recordAttributes.length === 0 &&
     recordType.attributes.length === 0 &&
     recordType.relationshipAttributes.length === 0
   ) {
-    const empty = document.createElement('li')
+    const empty = document.createElement('p')
     empty.className = 'attributes-empty'
     empty.textContent = 'Add the first attribute to define this object.'
-    attributeList.append(empty)
+    attributeGroups.append(empty)
   }
 
   const includedHeader = document.createElement('header')
@@ -503,7 +550,7 @@ const renderRecordTypeDesigner = (
     const item = document.createElement('li')
     item.className = 'included-record-row'
     const name = document.createElement('span')
-    name.className = 'schema-attribute-name'
+    name.className = 'included-record-name'
     name.textContent = included.recordType.name
     item.append(createRecordTypeIcon(included.relationship), name)
     includedList.append(item)
@@ -515,8 +562,8 @@ const renderRecordTypeDesigner = (
     includedList.append(empty)
   }
 
-  schema.append(fixedFields)
-  schema.append(attributesHeader, attributeList, includedHeader, includedList)
+  schema.append(dataHeader, fixedFields)
+  schema.append(attributesHeader, attributeGroups, includedHeader, includedList)
 
   layout.append(schema)
   content.append(header, layout)

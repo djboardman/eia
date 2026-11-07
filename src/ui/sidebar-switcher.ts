@@ -96,12 +96,13 @@ export const createSidebarSwitcher = (
               window.alert(error instanceof Error ? error.message : 'Could not pull from Source.')
             }
           },
+          onRefresh: refresh,
         })
       }
     } catch (error) {
       badge.textContent = '!'
       badge.hidden = false
-      if (activeView === 'source-control') renderSourceControlError(sourceControl, error)
+      if (activeView === 'source-control') renderSourceControlError(sourceControl, error, refresh)
     }
   }
 

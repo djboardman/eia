@@ -1,14 +1,12 @@
-import { Download, Upload } from 'lucide'
 import type { Workspace } from '../domain/workspace'
 import { downloadWorkspaceExport, parseWorkspaceImport } from '../persistence/workspace-transfer'
-import { createLucideIcon } from './icons'
+import type { CommandRegistry } from './command-registry'
 
-export const createWorkspaceActions = (
+export const registerWorkspaceTransferCommands = (
+  commands: CommandRegistry,
   workspace: Workspace,
   replaceWorkspace: (workspace: Workspace) => void,
 ) => {
-  const actions = document.createElement('div')
-  actions.className = 'workspace-actions'
   const importInput = document.createElement('input')
   importInput.type = 'file'
   importInput.accept = 'application/json,.json'
@@ -26,18 +24,7 @@ export const createWorkspaceActions = (
     }
   })
 
-  const importButton = document.createElement('button')
-  importButton.className = 'workspace-action-button'
-  importButton.type = 'button'
-  importButton.append(createLucideIcon(Upload, 'tree-action-icon'), 'Import')
-  importButton.addEventListener('click', () => importInput.click())
-
-  const exportButton = document.createElement('button')
-  exportButton.className = 'workspace-action-button'
-  exportButton.type = 'button'
-  exportButton.append(createLucideIcon(Download, 'tree-action-icon'), 'Export')
-  exportButton.addEventListener('click', () => downloadWorkspaceExport(workspace))
-
-  actions.append(importButton, exportButton, importInput)
-  return actions
+  commands.register({ id: 'workspace.import', label: 'Import', execute: () => importInput.click() })
+  commands.register({ id: 'workspace.export', label: 'Export', execute: () => downloadWorkspaceExport(workspace) })
+  return importInput
 }

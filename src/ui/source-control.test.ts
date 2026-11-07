@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangeJournalEntry } from '../domain/change-journal'
-import { createEmptyWorkspace } from '../domain/workspace'
+import { createEmptyWorkspace, createEmptyWsdlApiModel } from '../domain/workspace'
 import { describeJournalEntries, groupJournalEntries } from './source-control'
 
 const entry = (revision: number, command: ChangeJournalEntry['command']): ChangeJournalEntry => ({
@@ -16,6 +16,16 @@ describe('source control grouping', () => {
       entry(1, { type: 'category.create', definitionId: 'finance', name: 'Finance' }),
       entry(2, { type: 'stringSubtype.create', definitionId: 'date', name: 'IsoDate' }),
       entry(3, { type: 'dataScope.create', definitionId: 'sap', name: 'SAP' }),
+      entry(4, {
+        type: 'api.importWsdl',
+        dataScopeDefinitionId: 'sap',
+        categoryDefinitionId: 'sap:apis',
+        definitionId: 'api',
+        name: 'Journal API',
+        fileName: 'journal.wsdl',
+        document: '<definitions />',
+        model: createEmptyWsdlApiModel(),
+      }),
     ])
 
     expect([...groups.keys()]).toEqual(['Record Types', 'Data Types', 'Applications'])

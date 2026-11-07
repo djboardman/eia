@@ -5,12 +5,17 @@ import type { RepositoryCatalog } from '../domain/repository-catalog'
 import type { ForkPullPreview } from '../persistence/repository-sync'
 import type { WorkspaceCommand } from '../state/commands'
 import { getAllRecordTypes, resolveRelationshipAttribute } from '../state/selectors'
+import { CommandRegistry } from './command-registry'
+import { createSidebarViewHeader } from './sidebar-view-header'
 
-export type ChangeGroup = 'Record Types' | 'Data Types' | 'Applications' | 'Workspace'
+export type ChangeGroup = 'Record Types' | 'Data Types' | 'Applications' | 'Middleware' | 'Workspace'
 
 const groupForCommand = (command: WorkspaceCommand): ChangeGroup => {
   if (command.type.startsWith('stringSubtype.')) return 'Data Types'
   if (command.type.startsWith('dataScope.')) return 'Applications'
+  if (command.type.startsWith('api.')) return 'Applications'
+  if (command.type.startsWith('middleware.')) return 'Middleware'
+  if (command.type.startsWith('pipeline.')) return 'Middleware'
   if (command.type === 'workspace.replace') return 'Workspace'
   return 'Record Types'
 }
@@ -29,6 +34,9 @@ interface ChangeNames {
   recordTypes: Map<string, string>
   stringSubtypes: Map<string, string>
   dataScopes: Map<string, string>
+  middleware: Map<string, string>
+  pipelines: Map<string, string>
+  apis: Map<string, string>
   attributes: Map<string, string>
   relationships: Map<string, string>
 }
@@ -38,7 +46,17 @@ const collectChangeNames = (workspace: Workspace, entries: readonly ChangeJourna
     categories: new Map(workspace.recordTypes.categories.map(({ id, name }) => [id, name])),
     recordTypes: new Map(),
     stringSubtypes: new Map(workspace.dataTypes.stringSubtypes.map(({ definitionId, name }) => [definitionId, name])),
-    dataScopes: new Map(workspace.applications.dataScopes.map(({ definitionId, name }) => [definitionId, name])),
+    dataScopes: new Map(workspace.applications.dataScopeCollection.items.map(
+      ({ definitionId, name }) => [definitionId, name],
+    )),
+    middleware: new Map(workspace.middleware.items.map(({ definitionId, name }) => [definitionId, name])),
+    pipelines: new Map(workspace.middleware.items.flatMap(({ categories }) => categories.flatMap((category) =>
+      category.kind === 'pipelines'
+        ? category.items.map(({ definitionId, name }) => [definitionId, name] as const)
+        : []))),
+    apis: new Map(workspace.applications.dataScopeCollection.items.flatMap(({ categories }) => categories
+      .filter((category) => category.kind === 'apis')
+      .flatMap(({ items }) => items.map(({ definitionId, name }) => [definitionId, name] as const)))),
     attributes: new Map(),
     relationships: new Map(),
   }
@@ -63,6 +81,12 @@ const collectChangeNames = (workspace: Workspace, entries: readonly ChangeJourna
       names.stringSubtypes.set(command.definitionId, command.changes.name)
     } else if (command.type === 'dataScope.create' || command.type === 'dataScope.rename') {
       names.dataScopes.set(command.definitionId, command.name)
+    } else if (command.type === 'middleware.create' || command.type === 'middleware.rename') {
+      names.middleware.set(command.definitionId, command.name)
+    } else if (command.type === 'pipeline.create' || command.type === 'pipeline.rename') {
+      names.pipelines.set(command.definitionId, command.name)
+    } else if (command.type === 'api.importWsdl') {
+      names.apis.set(command.definitionId, command.name)
     } else if (command.type === 'attribute.update' && command.changes.name) {
       names.attributes.set(command.definitionId, command.changes.name)
     }
@@ -89,6 +113,14 @@ const commandLabel = (command: WorkspaceCommand, names: ChangeNames) => {
     case 'dataScope.create': return `Add data scope ${command.name}`
     case 'dataScope.rename': return `Rename data scope to ${command.name}`
     case 'dataScope.delete': return `Delete data scope ${names.dataScopes.get(command.definitionId) ?? ''}`.trim()
+    case 'middleware.create': return `Add middleware ${command.name}`
+    case 'middleware.rename': return `Rename middleware to ${command.name}`
+    case 'middleware.delete': return `Delete middleware ${names.middleware.get(command.definitionId) ?? ''}`.trim()
+    case 'pipeline.create': return `Add pipeline ${command.name}`
+    case 'pipeline.rename': return `Rename pipeline to ${command.name}`
+    case 'pipeline.update': return `Update pipeline ${names.pipelines.get(command.definitionId) ?? ''}`.trim()
+    case 'pipeline.delete': return `Delete pipeline ${names.pipelines.get(command.definitionId) ?? ''}`.trim()
+    case 'api.importWsdl': return `Import API ${names.apis.get(command.definitionId) ?? command.name}`
     case 'attribute.add': return `Add attribute ${names.attributes.get(command.definitionId) ?? ''}${onRecordType}`.trim()
     case 'attribute.update': return `Update ${names.attributes.get(command.definitionId) ?? 'attribute'}${onRecordType}`
     case 'attribute.delete': return `Delete ${names.attributes.get(command.definitionId) ?? 'attribute'}${onRecordType}`
@@ -116,6 +148,18 @@ interface SourceControlOptions {
   onSelectRepository: (repositoryId: string) => void
   onCreateFork: (name: string) => void
   onPullFromSource: () => void
+  onRefresh: () => void
+}
+
+const createSourceControlHeader = (count: number | undefined, onRefresh: () => void) => {
+  const commands = new CommandRegistry()
+  commands.register({ id: 'source-control.refresh', label: 'Refresh', execute: onRefresh })
+  return createSidebarViewHeader({
+    title: 'Source Control',
+    count,
+    commandIds: ['source-control.refresh'],
+    commands,
+  })
 }
 
 export const renderSourceControl = ({
@@ -129,54 +173,43 @@ export const renderSourceControl = ({
   onSelectRepository,
   onCreateFork,
   onPullFromSource,
+  onRefresh,
 }: SourceControlOptions) => {
   container.replaceChildren()
-  const header = document.createElement('header')
-  header.className = 'source-control-header'
-  const title = document.createElement('h2')
-  title.className = 'source-control-title'
-  title.textContent = 'Source Control'
-  const count = document.createElement('span')
-  count.className = 'source-control-count'
-  count.textContent = String(entries.length)
-  header.append(title, count)
-  container.append(header)
+  const content = document.createElement('div')
+  content.className = 'source-control-content'
+  container.append(createSourceControlHeader(entries.length, onRefresh), content)
 
   const repositoryHeader = document.createElement('section')
-  repositoryHeader.className = 'source-repository-header'
+  repositoryHeader.className = 'source-repository-section'
   const repositorySelect = document.createElement('select')
   repositorySelect.className = 'source-repository-select'
   repositorySelect.setAttribute('aria-label', 'Active repository')
   for (const item of catalog.repositories) {
     const option = document.createElement('option')
     option.value = item.id
-    option.textContent = `${item.name} · ${item.type === 'source' ? 'Source' : 'Fork'}`
+    option.textContent = item.name
     option.selected = item.id === catalog.activeRepositoryId
     repositorySelect.append(option)
   }
   repositorySelect.addEventListener('change', () => onSelectRepository(repositorySelect.value))
-  const repositoryName = document.createElement('strong')
-  repositoryName.className = 'source-repository-name'
-  repositoryName.textContent = repository.name
-  const repositoryType = document.createElement('span')
-  repositoryType.className = 'source-repository-type'
-  repositoryType.textContent = repository.type === 'source' ? 'Source' : 'Fork'
-  const activeLayer = document.createElement('span')
-  activeLayer.className = 'source-repository-layer'
-  activeLayer.textContent = `Layer: ${repository.activeLayer === 'source' ? 'Source' : 'Fork'}`
-  repositoryHeader.append(repositorySelect, repositoryName, repositoryType, activeLayer)
+  const repositorySummary = document.createElement('span')
+  repositorySummary.className = repository.type === 'source'
+    ? 'source-repository-summary source-repository-summary-source'
+    : 'source-repository-summary source-repository-summary-fork'
+  const upstreamName = catalog.repositories.find(({ id }) => id === repository.upstream?.repositoryId)?.name
+  repositorySummary.textContent = repository.type === 'source' ? 'Source' : (upstreamName ?? 'Customer repository')
+  if (repository.type === 'fork' && upstreamName) {
+    repositorySummary.title = `Forked from ${upstreamName}`
+    repositorySummary.setAttribute('aria-label', `Forked from ${upstreamName}`)
+  }
+  repositoryHeader.append(repositorySelect, repositorySummary)
   if (repository.type === 'fork') {
-    const upstream = document.createElement('span')
-    upstream.className = 'source-repository-upstream'
-    upstream.textContent = repository.upstream?.lastSynchronizedCommitId
-      ? 'Upstream synchronized'
-      : 'Upstream not yet synchronized'
-    repositoryHeader.append(upstream)
     if (pullPreview) {
       const pullSection = document.createElement('section')
       pullSection.className = 'source-pull-section'
       const pullStatus = document.createElement('strong')
-      pullStatus.className = 'source-pull-status'
+      pullStatus.className = 'ui-status-text'
       pullStatus.textContent = pullPreview.commits.length
         ? `${pullPreview.changeCount} incoming change${pullPreview.changeCount === 1 ? '' : 's'}`
         : 'Up to date'
@@ -186,6 +219,7 @@ export const renderSourceControl = ({
         list.className = 'source-pull-list'
         for (const commit of pullPreview.commits) {
           const item = document.createElement('li')
+          item.className = 'ui-metadata-text'
           item.textContent = commit.message
           list.append(item)
         }
@@ -200,7 +234,7 @@ export const renderSourceControl = ({
       }
       if (pullPreview.conflicts.length) {
         const conflict = document.createElement('span')
-        conflict.className = 'source-pull-conflict'
+        conflict.className = 'ui-error-text'
         conflict.textContent = `${pullPreview.conflicts.length} conflict${pullPreview.conflicts.length === 1 ? '' : 's'} must be resolved before pulling.`
         pullSection.append(conflict)
       }
@@ -215,15 +249,15 @@ export const renderSourceControl = ({
     forkForm.className = 'source-fork-form'
     forkForm.style.display = 'none'
     const forkName = document.createElement('input')
-    forkName.className = 'source-fork-input'
+    forkName.className = 'ui-text-input'
     forkName.setAttribute('aria-label', 'Fork name')
     forkName.value = `${repository.name} Fork`
     const confirmFork = document.createElement('button')
-    confirmFork.className = 'source-fork-confirm'
+    confirmFork.className = 'ui-button-primary'
     confirmFork.type = 'submit'
     confirmFork.textContent = 'Create'
     const cancelFork = document.createElement('button')
-    cancelFork.className = 'source-fork-cancel'
+    cancelFork.className = 'ui-button-secondary'
     cancelFork.type = 'button'
     cancelFork.textContent = 'Cancel'
     forkButton.addEventListener('click', () => {
@@ -248,16 +282,16 @@ export const renderSourceControl = ({
     forkForm.append(forkName, confirmFork, cancelFork)
     repositoryHeader.append(forkButton, forkForm)
   }
-  container.append(repositoryHeader)
+  content.append(repositoryHeader)
 
   const commitForm = document.createElement('form')
   commitForm.className = 'source-commit-form'
   const message = document.createElement('input')
-  message.className = 'source-commit-input'
+  message.className = 'ui-text-input'
   message.placeholder = 'Commit message'
   message.setAttribute('aria-label', 'Commit message')
   const commitButton = document.createElement('button')
-  commitButton.className = 'source-commit-button'
+  commitButton.className = 'ui-button-primary'
   commitButton.type = 'submit'
   commitButton.textContent = 'Commit'
   commitButton.disabled = entries.length === 0
@@ -270,20 +304,20 @@ export const renderSourceControl = ({
     onCommit(message.value)
   })
   commitForm.append(message, commitButton)
-  container.append(commitForm)
+  content.append(commitForm)
 
   if (entries.length === 0) {
     const empty = document.createElement('p')
-    empty.className = 'source-control-empty'
+    empty.className = 'ui-status-text'
     empty.textContent = 'No pending changes.'
-    container.append(empty)
+    content.append(empty)
   } else {
     const labels = describeJournalEntries(workspace, entries)
     for (const [groupName, groupEntries] of groupJournalEntries(entries)) {
       const group = document.createElement('section')
       group.className = 'source-change-group'
       const heading = document.createElement('h3')
-      heading.className = 'source-change-group-title'
+      heading.className = 'ui-section-title'
       heading.textContent = groupName
       const list = document.createElement('ol')
       list.className = 'source-change-list'
@@ -291,28 +325,28 @@ export const renderSourceControl = ({
         const item = document.createElement('li')
         item.className = 'source-change-row'
         const label = document.createElement('span')
-        label.className = 'source-change-label'
+        label.className = 'ui-item-title flex-1'
         label.textContent = labels.get(entry.id) ?? 'Workspace change'
         const revision = document.createElement('span')
-        revision.className = 'source-change-revision'
+        revision.className = 'ui-metadata-text shrink-0'
         revision.textContent = `r${entry.revision}`
         item.append(label, revision)
         list.append(item)
       }
       group.append(heading, list)
-      container.append(group)
+      content.append(group)
     }
   }
 
   const history = document.createElement('section')
   history.className = 'source-history'
   const historyTitle = document.createElement('h3')
-  historyTitle.className = 'source-history-title'
+  historyTitle.className = 'ui-section-title'
   historyTitle.textContent = 'History'
   history.append(historyTitle)
   if (repository.commits.length === 0) {
     const empty = document.createElement('p')
-    empty.className = 'source-control-empty'
+    empty.className = 'ui-status-text'
     empty.textContent = 'No local commits.'
     history.append(empty)
   } else {
@@ -322,10 +356,10 @@ export const renderSourceControl = ({
       const item = document.createElement('li')
       item.className = 'source-history-row'
       const message = document.createElement('span')
-      message.className = 'source-history-message'
+      message.className = 'ui-item-title'
       message.textContent = commit.message
       const details = document.createElement('span')
-      details.className = 'source-history-details'
+      details.className = 'ui-metadata-text'
       const layer = commit.layer === 'source' ? 'Source' : 'Fork'
       details.textContent = `${layer} · ${commit.changes.length} change${commit.changes.length === 1 ? '' : 's'} · ${new Date(commit.timestamp).toLocaleString()}`
       item.append(message, details)
@@ -333,13 +367,16 @@ export const renderSourceControl = ({
     }
     history.append(list)
   }
-  container.append(history)
+  content.append(history)
 }
 
-export const renderSourceControlError = (container: HTMLElement, error: unknown) => {
+export const renderSourceControlError = (container: HTMLElement, error: unknown, onRefresh: () => void) => {
   container.replaceChildren()
+  const content = document.createElement('div')
+  content.className = 'source-control-content'
   const message = document.createElement('p')
-  message.className = 'source-control-error'
+  message.className = 'ui-error-text'
   message.textContent = error instanceof Error ? error.message : 'Could not load the change journal.'
-  container.append(message)
+  content.append(message)
+  container.append(createSourceControlHeader(undefined, onRefresh), content)
 }

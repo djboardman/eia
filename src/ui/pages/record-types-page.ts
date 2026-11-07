@@ -22,7 +22,7 @@ export const renderRecordTypesPage = (content: HTMLElement, workspace: Workspace
     const section = document.createElement('section')
     section.className = 'category-card'
     const categoryHeading = document.createElement('h2')
-    categoryHeading.className = 'section-title'
+    categoryHeading.className = 'editor-section-title'
     categoryHeading.textContent = category.name
     section.append(categoryHeading)
     const typeList = document.createElement('ul')

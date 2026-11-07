@@ -1,7 +1,7 @@
 :root {
   font-family: 'IBM Plex Sans Variable', sans-serif;
-  color: #18212f;
-  background: #f8fafc;
+  color: var(--color-text-primary);
+  background: var(--color-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -20,48 +20,46 @@ body {
   min-height: 100vh;
 }
 
-.workspace-sidebar {
-  resize: horizontal;
+.technical-name {
+  font-weight: 400;
 }
 
 .workspace-sidebar > [hidden] {
   display: none !important;
 }
 
-.tree-node {
-  overflow-wrap: anywhere;
-}
-
-.tree-category-row,
-.tree-root-row {
+.explorer-tree-item-row {
   list-style: none;
 }
 
-.tree-category-row::-webkit-details-marker,
-.tree-root-row::-webkit-details-marker {
+.explorer-tree-item-row::-webkit-details-marker {
   display: none;
 }
 
-.tree-node details[open] > summary > .tree-chevron {
+.explorer-tree-item details[open] > summary > .explorer-tree-item-expander {
   transform: rotate(90deg);
 }
 
-.tree-root-row:hover > .tree-actions,
-.tree-root-row:focus-within > .tree-actions,
-.tree-category-row:hover > .tree-actions,
-.tree-category-row:focus-within > .tree-actions,
-.tree-record-type:hover > .tree-actions,
-.tree-record-type:focus-within > .tree-actions {
+.attribute-group-title::-webkit-details-marker {
+  display: none;
+}
+
+.attribute-group[open] > .attribute-group-title > .attribute-group-chevron {
+  transform: rotate(90deg);
+}
+
+.explorer-tree-item-row:hover > .explorer-tree-item-actions,
+.explorer-tree-item-row:focus-within > .explorer-tree-item-actions {
   opacity: 1;
 }
 
 .attribute-row.is-drop-target {
-  box-shadow: inset 0 2px #2563eb;
+  box-shadow: inset 0 2px var(--color-accent-600);
 }
 
 .schema-fixed-row:not(:last-child),
 .attribute-list > li:not(:last-child) {
-  border-bottom: 1px solid #94a3b8;
+  border-bottom: 1px solid var(--color-border-strong);
 }
 
 .schema-type {
@@ -69,64 +67,47 @@ body {
   width: max-content;
 }
 
-.attribute-row .schema-constraints,
-.inherited-attribute-row .schema-constraints {
+.attribute-row .schema-constraints {
   flex-wrap: nowrap;
 }
 
-.attribute-row .attribute-drag-icon,
-.schema-fixed-row .schema-lock-icon,
-.inherited-attribute-row .inherited-attribute-icon,
-.relationship-attribute-row .relationship-icon {
+.attribute-row > .attribute-drag-icon,
+.attribute-row > .schema-lock-icon,
+.attribute-row > .inherited-attribute-icon,
+.attribute-row > .relationship-icon {
   grid-column: 1;
   grid-row: 1;
 }
 
-.attribute-row .attribute-name,
-.schema-fixed-row .schema-attribute-name,
-.inherited-attribute-row .schema-attribute-name,
-.relationship-attribute-row .relationship-attribute-name {
+.attribute-row > .attribute-name,
+.attribute-row > .schema-attribute-name,
+.attribute-row > .relationship-attribute-name {
   grid-column: 2;
   grid-row: 1;
 }
 
-.attribute-row .attribute-type,
-.schema-fixed-row .schema-type,
-.inherited-attribute-row .schema-type,
-.relationship-attribute-row .schema-type {
+.attribute-row > .attribute-type,
+.attribute-row > .schema-type {
   grid-column: 3;
   grid-row: 1;
 }
 
-.attribute-row .schema-constraints,
-.inherited-attribute-row .inherited-origin,
-.relationship-attribute-row .relationship-mode-switch {
+.attribute-row > .inherited-origin,
+.attribute-row > .relationship-mode-switch {
   grid-column: 2;
   grid-row: 2;
   justify-self: start;
   margin-left: 0;
 }
 
-.inherited-attribute-row .schema-constraints {
-  grid-column: 3;
+.attribute-row > .schema-constraints {
+  grid-column: 3 / 5;
   grid-row: 2;
   margin-left: 0;
 }
 
-.schema-fixed-row .schema-fixed-value {
-  grid-column: 2;
-  grid-row: 2;
-}
-
-.schema-fixed-row .schema-constraints {
-  grid-column: 3;
-  grid-row: 2;
-  margin-left: 0;
-}
-
-.attribute-row .attribute-delete-action,
-.relationship-attribute-row .attribute-delete-action {
-  grid-column: 4;
+.attribute-row > .attribute-delete-action {
+  grid-column: 5;
   grid-row: 1;
 }
 
@@ -142,27 +123,31 @@ body {
 
   .attribute-row {
     height: auto;
-    grid-template-columns: auto minmax(0, 1fr) 7rem auto;
+    grid-template-columns: 1rem minmax(0, 1fr) 7rem 1.5rem;
     min-height: 5rem;
   }
 
-  .attribute-row .schema-constraints {
+  .attribute-row > .schema-constraints {
     grid-column: 2 / 4;
     grid-row: 2;
     margin-left: 0;
   }
 
-  .attribute-row .attribute-delete-action {
+  .attribute-row > .attribute-delete-action {
     grid-column: 4;
     grid-row: 1;
   }
 
   .relationship-controls {
+    grid-column-end: 5;
     grid-template-columns: 1fr;
   }
+}
 
-  .inherited-attribute-row {
-    height: auto;
-    min-height: 5rem;
-  }
+.api-contract[open] > .api-contract-summary .api-contract-chevron {
+  transform: rotate(90deg);
+}
+
+.api-contract-summary::-webkit-details-marker {
+  display: none;
 }

@@ -58,6 +58,20 @@ const commandTargets = (command: WorkspaceCommand): string[] => {
     case 'dataScope.create':
     case 'dataScope.delete': return [`data-scope/${command.definitionId}/*`]
     case 'dataScope.rename': return [`data-scope/${command.definitionId}/name`]
+    case 'middleware.create':
+    case 'middleware.delete': return [`middleware/${command.definitionId}/*`]
+    case 'middleware.rename': return [`middleware/${command.definitionId}/name`]
+    case 'pipeline.create': return [
+      `middleware/${command.middlewareDefinitionId}/pipeline/${command.definitionId}/*`,
+    ]
+    case 'pipeline.delete': return [`pipeline/${command.definitionId}/*`]
+    case 'pipeline.rename': return [`pipeline/${command.definitionId}/name`]
+    case 'pipeline.update': return Object.keys(command.changes).map(
+      (property) => `pipeline/${command.definitionId}/${property}`,
+    )
+    case 'api.importWsdl': return [
+      `data-scope/${command.dataScopeDefinitionId}/api/${command.definitionId}/*`,
+    ]
     case 'attribute.add':
     case 'attribute.delete': return [
       `record/${command.recordTypeDefinitionId}/attribute/${command.definitionId}/*`,

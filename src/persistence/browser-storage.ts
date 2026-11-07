@@ -1,6 +1,7 @@
 import type { Category } from '../models/category'
 import {
   createEmptyWorkspace,
+  createDataScopeCategories,
   rootRecordTypeDefinitionId,
   type DataScope,
   type TopLevelDefinition,
@@ -56,7 +57,12 @@ const loadLegacyWorkspace = (): Workspace => {
   const topLevels = parse(legacyKeys.topLevels)
   if (Array.isArray(topLevels)) workspace.topLevels = topLevels as TopLevelDefinition[]
   const dataScopes = parse(legacyKeys.dataScopes)
-  if (Array.isArray(dataScopes)) workspace.applications.dataScopes = dataScopes as DataScope[]
+  if (Array.isArray(dataScopes)) {
+    workspace.applications.dataScopeCollection.items = (dataScopes as DataScope[]).map((scope) => ({
+      ...scope,
+      categories: createDataScopeCategories(scope.definitionId),
+    }))
+  }
   return workspace
 }
 

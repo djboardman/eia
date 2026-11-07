@@ -8,7 +8,7 @@ export const createInlineEditor = (
   finish: (commit: boolean, value?: string) => void,
 ) => {
   const input = document.createElement('input')
-  input.className = technical ? 'tree-editor-input technical-name' : 'tree-editor-input'
+  input.className = technical ? 'explorer-tree-editor-input technical-name' : 'explorer-tree-editor-input'
   input.value = value
   input.setAttribute('aria-label', label)
   input.addEventListener('click', (event) => event.stopPropagation())
@@ -29,13 +29,17 @@ export const createInlineEditor = (
   return input
 }
 
-export const createTreeAction = (label: string, icon: IconNode | HTMLElement, action: () => void) => {
+export const createTreeAction = (
+  label: string,
+  icon: IconNode | HTMLElement,
+  action: () => void,
+) => {
   const button = document.createElement('button')
-  button.className = 'tree-action'
+  button.className = 'explorer-tree-action'
   button.type = 'button'
   button.title = label
   button.setAttribute('aria-label', label)
-  button.append(icon instanceof HTMLElement ? icon : createLucideIcon(icon, 'tree-action-icon'))
+  button.append(icon instanceof HTMLElement ? icon : createLucideIcon(icon, 'explorer-tree-action-icon'))
   button.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
@@ -63,7 +67,7 @@ const createTreeMenuControl = (
   }
 
   const container = document.createElement('span')
-  container.className = 'tree-menu'
+  container.className = 'explorer-tree-menu-container'
   const trigger = createTreeAction(label, icon, () => {
     menu.hidden = !menu.hidden
     trigger.setAttribute('aria-expanded', String(!menu.hidden))
@@ -73,12 +77,14 @@ const createTreeMenuControl = (
   trigger.setAttribute('aria-expanded', 'false')
 
   const menu = document.createElement('span')
-  menu.className = 'tree-menu-popup'
+  menu.className = 'explorer-tree-menu'
   menu.setAttribute('role', 'menu')
   menu.hidden = true
   for (const item of actions) {
     const button = document.createElement('button')
-    button.className = item.danger ? 'tree-menu-item tree-menu-item-danger' : 'tree-menu-item'
+    button.className = item.danger
+      ? 'explorer-tree-menu-item explorer-tree-menu-item-danger'
+      : 'explorer-tree-menu-item'
     button.type = 'button'
     button.textContent = item.label
     button.setAttribute('role', 'menuitem')
