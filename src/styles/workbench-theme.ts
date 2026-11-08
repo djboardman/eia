@@ -1,31 +1,16 @@
+import { workbenchTokens } from './workbench-tokens'
+
 export const workbenchTheme = {
   fontFamily: {
     sans: '"IBM Plex Sans Variable", sans-serif',
-    mono: '"IBM Plex Mono", monospace',
+    mono: '"Lilex", monospace',
   },
-  fontSize: {
-    caption: '0.625rem',
-    ui: '0.75rem',
-    body: '0.875rem',
-    section: '1.125rem',
-    title: '1.875rem',
-  },
-  lineHeight: {
-    caption: '0.875rem',
-    ui: '1rem',
-    body: '1.25rem',
-    section: '1.5rem',
-    title: '2.25rem',
-  },
-  fontWeight: {
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-  },
-  width: {
-    sidebarResizer: '0.25rem',
-  },
+  fontSize: workbenchTokens.fontSize,
+  lineHeight: workbenchTokens.lineHeight,
+  fontWeight: workbenchTokens.fontWeight,
+  width: workbenchTokens.size,
+  height: workbenchTokens.size,
+  minHeight: workbenchTokens.size,
   colors: {
     brand: { 500: 'var(--color-brand-500)', 600: 'var(--color-brand-600)' },
     canvas: 'var(--color-canvas)',
@@ -72,21 +57,20 @@ export const workbenchTheme = {
     danger: { 50: 'var(--color-danger-50)', 600: 'var(--color-danger-600)', 700: 'var(--color-danger-700)' },
     info: { 50: 'var(--color-info-50)', 600: 'var(--color-info-600)', 700: 'var(--color-info-700)' },
     editor: {
-      attributeName: 'var(--color-editor-attribute-name)',
-      typeName: 'var(--color-editor-type-name)',
+      'attribute-name': 'var(--color-editor-attribute-name)',
+      'type-name': 'var(--color-editor-type-name)',
     },
     entity: {
-      recordType: 'var(--color-entity-record-type)',
-      dataType: 'var(--color-entity-data-type)',
-      dataScope: 'var(--color-entity-data-scope)',
+      'record-type': 'var(--color-entity-record-type)',
+      'data-type': 'var(--color-entity-data-type)',
+      'data-scope': 'var(--color-entity-data-scope)',
       relationship: 'var(--color-entity-relationship)',
       inherited: 'var(--color-entity-inherited)',
     },
   },
-  borderRadius: { sm: '0.25rem', md: '0.375rem', lg: '0.75rem', full: '9999px' },
-  boxShadow: {
-    floating: '0 4px 12px rgb(15 23 42 / 0.12)',
-    overlay: '0 16px 40px rgb(15 23 42 / 0.18)',
-  },
-  breakpoints: { compact: '43.75rem', wide: '80rem' },
+  borderRadius: workbenchTokens.borderRadius,
+  boxShadow: workbenchTokens.boxShadow,
+  duration: workbenchTokens.duration,
+  zIndex: workbenchTokens.zIndex,
+  breakpoints: workbenchTokens.breakpoints,
 } as const

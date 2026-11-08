@@ -10,6 +10,7 @@ import { createFork, loadRepositoryCatalog, switchRepository } from '../persiste
 import { previewForkPull, pullFromSource } from '../persistence/repository-sync'
 import { createLucideIcon } from './icons'
 import { renderSourceControl, renderSourceControlError } from './source-control'
+import { browserFeedback } from './feedback'
 
 type SidebarView = 'explorer' | 'source-control'
 const sidebarViewStorageKey = 'eia-sidebar-view'
@@ -73,7 +74,7 @@ export const createSidebarSwitcher = (
               commitLocalChanges(workspace, message)
               refresh()
             } catch (error) {
-              window.alert(error instanceof Error ? error.message : 'Could not create the local commit.')
+              browserFeedback.error(error instanceof Error ? error.message : 'Could not create the local commit.')
             }
           },
           onSelectRepository: (repositoryId) => {
@@ -85,7 +86,7 @@ export const createSidebarSwitcher = (
               createFork(repository, workspace, entries, name)
               window.location.reload()
             } catch (error) {
-              window.alert(error instanceof Error ? error.message : 'Could not create the fork.')
+              browserFeedback.error(error instanceof Error ? error.message : 'Could not create the fork.')
             }
           },
           onPullFromSource: () => {
@@ -93,7 +94,7 @@ export const createSidebarSwitcher = (
               pullFromSource(repository, workspace, entries)
               window.location.reload()
             } catch (error) {
-              window.alert(error instanceof Error ? error.message : 'Could not pull from Source.')
+              browserFeedback.error(error instanceof Error ? error.message : 'Could not pull from Source.')
             }
           },
           onRefresh: refresh,

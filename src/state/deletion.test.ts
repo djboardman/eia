@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyWorkspace } from '../domain/workspace'
-import type { RecordType } from '../models/record-type'
+import type { RecordType } from '../domain/record-types'
 import { applyWorkspaceCommand } from './commands'
 import { dataTypeReferenceCount, recordTypeExternalReferenceCount } from './selectors'
 

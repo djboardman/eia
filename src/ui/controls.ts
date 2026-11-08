@@ -1,5 +1,6 @@
 import { MoreHorizontal, Plus, Trash2, type IconNode } from 'lucide'
 import { createLucideIcon } from './icons'
+import { browserFeedback } from './feedback'
 
 export const createInlineEditor = (
   label: string,
@@ -94,10 +95,10 @@ const createTreeMenuControl = (
       menu.hidden = true
       trigger.setAttribute('aria-expanded', 'false')
       if (item.blockedMessage) {
-        window.alert(item.blockedMessage)
+        browserFeedback.error(item.blockedMessage)
         return
       }
-      if (!item.confirm || window.confirm(item.confirm)) item.action()
+      if (!item.confirm || browserFeedback.confirm(item.confirm)) item.action()
     })
     menu.append(button)
   }
@@ -143,10 +144,10 @@ export const createDeleteButton = (label: string, action: () => void, blockedMes
     event.preventDefault()
     event.stopPropagation()
     if (blockedMessage) {
-      window.alert(blockedMessage)
+      browserFeedback.error(blockedMessage)
       return
     }
-    if (window.confirm(`Delete ${label}?`)) action()
+    if (browserFeedback.confirm(`Delete ${label}?`)) action()
   })
   return button
 }

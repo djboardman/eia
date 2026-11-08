@@ -19,7 +19,7 @@ const appendText = (parent: HTMLElement, className: string, value: string) => {
 
 const createEmptyState = (message: string) => {
   const empty = document.createElement('p')
-  empty.className = 'api-empty-state'
+  empty.className = 'editor-empty-state-compact'
   empty.textContent = message
   return empty
 }
@@ -34,9 +34,9 @@ const createProperty = (label: string, value: string, technical = true) => {
 
 const createSection = (title: string) => {
   const section = document.createElement('section')
-  section.className = 'api-card'
+  section.className = 'editor-card'
   const heading = document.createElement('h2')
-  heading.className = 'api-card-title'
+  heading.className = 'editor-card-title'
   heading.textContent = title
   section.append(heading)
   return section
@@ -377,7 +377,7 @@ export const createWsdlApiPage = ({ workspace, content }: WsdlApiPageDependencie
     header.append(eyebrow, titleLine, metadata)
 
     const tabList = document.createElement('div')
-    tabList.className = 'api-tabs'
+    tabList.className = 'editor-tabs'
     tabList.setAttribute('role', 'tablist')
     const tabs: Array<[ApiEditorTab, string]> = [
       ['overview', 'Overview'],
@@ -387,7 +387,7 @@ export const createWsdlApiPage = ({ workspace, content }: WsdlApiPageDependencie
     ]
     for (const [id, label] of tabs) {
       const button = document.createElement('button')
-      button.className = 'api-tab'
+      button.className = 'editor-tab'
       button.type = 'button'
       button.textContent = label
       button.setAttribute('role', 'tab')

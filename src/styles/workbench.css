@@ -5,35 +5,32 @@
   --workbench-secondary-sidebar-width: 18rem;
   --workbench-sidebar-min-width: 12rem;
   --workbench-sidebar-max-width: 30rem;
-  --workbench-sidebar-resizer-width: 0.25rem;
   --workbench-sidebar-title-height: 2.25rem;
   --workbench-editor-tabs-height: 2.25rem;
   --workbench-bottom-panel-height: 16rem;
   --workbench-status-bar-height: 1.5rem;
   --workbench-editor-padding: 2rem;
   --workbench-editor-max-width: 72rem;
-  --control-height-compact: 1.5rem;
-  --control-height-default: 2rem;
-  --tree-row-height: 1.75rem;
-  --attribute-row-height: 5rem;
-  --icon-size-default: 1rem;
-  --icon-size-compact: 0.875rem;
-  --duration-fast: 100ms;
-  --duration-layout: 160ms;
-  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
-  --z-dropdown: 30;
-  --z-command-palette: 50;
-  --z-dialog: 60;
-  --z-notification: 70;
 }
 
 .theme-settings-dialog::backdrop {
   background: rgb(15 23 42 / 0.45);
 }
 
-.wb-sidebar-view-menu[hidden],
-.explorer-tree-menu[hidden] {
-  display: none !important;
+.hierarchy-selector-dialog::backdrop {
+  background: rgb(15 23 42 / 0.55);
+}
+
+.hierarchy-selector-row {
+  border-left: 0.25rem solid transparent;
+  padding-left: calc(0.75rem + (var(--hierarchy-depth) * 1rem));
+}
+
+.hierarchy-selector-row[aria-selected='true'] {
+  border-left-color: var(--color-accent-500);
+  background: var(--color-accent-200);
+  color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--color-accent-500);
 }
 
 .explorer-tree-item-row {

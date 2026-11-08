@@ -1,6 +1,7 @@
 import type { Workspace } from '../domain/workspace'
 import { downloadWorkspaceExport, parseWorkspaceImport } from '../persistence/workspace-transfer'
 import type { CommandRegistry } from './command-registry'
+import { browserFeedback } from './feedback'
 
 export const registerWorkspaceTransferCommands = (
   commands: CommandRegistry,
@@ -16,9 +17,9 @@ export const registerWorkspaceTransferCommands = (
     if (!file) return
     try {
       const importedWorkspace = parseWorkspaceImport(JSON.parse(await file.text()))
-      if (window.confirm('Import this workspace and replace the current data?')) replaceWorkspace(importedWorkspace)
+      if (browserFeedback.confirm('Import this workspace and replace the current data?')) replaceWorkspace(importedWorkspace)
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'Could not import the workspace.')
+      browserFeedback.error(error instanceof Error ? error.message : 'Could not import the workspace.')
     } finally {
       importInput.value = ''
     }

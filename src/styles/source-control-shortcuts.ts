@@ -3,7 +3,7 @@ export const sourceControlShortcuts = {
   'source-control-content': 'grid content-start gap-3 p-2',
   'source-repository-section': 'grid grid-cols-1 items-center gap-2 border-b border-border-subtle pb-3',
   'source-repository-select': 'ui-select-control',
-  'source-repository-summary': 'inline-flex justify-self-start items-center rounded-full px-2 py-0.5 font-sans text-[0.625rem] leading-[0.875rem] font-semibold uppercase tracking-wide',
+  'source-repository-summary': 'ui-badge justify-self-start px-2 py-0.5 text-caption leading-caption font-semibold uppercase tracking-wide',
   'source-repository-summary-source': 'bg-success-600 text-text-inverse',
   'source-repository-summary-fork': 'bg-accent-600 text-text-inverse',
   'source-fork-form': 'grid grid-cols-[1fr_auto_auto] gap-1',

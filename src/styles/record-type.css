@@ -1,0 +1,130 @@
+.attribute-group-title::-webkit-details-marker {
+  display: none;
+}
+
+.attribute-group[open] > .attribute-group-title > .attribute-group-chevron {
+  transform: rotate(90deg);
+}
+
+.attribute-row.is-drop-target {
+  box-shadow: inset 0 2px var(--color-accent-600);
+}
+
+.relationship-selector-open {
+  height: auto;
+  min-height: 3.5rem;
+  grid-template-rows: auto;
+  align-items: center;
+}
+
+.relationship-controls {
+  display: grid;
+  grid-column: 2 / 3;
+  grid-row: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: center;
+  gap: 0.25rem;
+}
+
+.relationship-control {
+  height: 1.75rem;
+  min-width: 0;
+  width: 100%;
+  padding-inline: 0.375rem;
+}
+
+.schema-fixed-row:not(:last-child),
+.attribute-list > li:not(:last-child) {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.schema-type {
+  justify-self: start;
+  width: max-content;
+}
+
+.attribute-row .schema-constraints {
+  flex-wrap: nowrap;
+}
+
+.attribute-row > .attribute-drag-icon,
+.attribute-row > .schema-lock-icon,
+.attribute-row > .inherited-attribute-icon,
+.attribute-row > .relationship-icon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.attribute-row > .attribute-name,
+.attribute-row > .schema-attribute-name {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.attribute-row > .attribute-type,
+.attribute-row > .schema-type {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.attribute-row > .relationship-constraints {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.attribute-row > .inherited-origin {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  margin-left: 0;
+}
+
+.attribute-row > .schema-constraints {
+  grid-column: 3 / 5;
+  grid-row: 2;
+  margin-left: 0;
+}
+
+.attribute-row > .attribute-delete-action {
+  grid-column: 5;
+  grid-row: 1;
+}
+
+@media (max-width: 43.75rem) {
+  .attribute-row {
+    height: auto;
+    min-height: 5rem;
+    grid-template-columns: 1rem minmax(0, 1fr) 7rem 1.5rem;
+  }
+
+  .attribute-row > .schema-constraints {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    margin-left: 0;
+  }
+
+  .attribute-row > .attribute-delete-action {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .relationship-controls {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+  }
+
+  .relationship-selector-open {
+    grid-template-rows: auto auto;
+  }
+
+  .attribute-row > .relationship-data-type {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .attribute-row > .relationship-constraints {
+    grid-column: 3;
+    grid-row: 2;
+  }
+}

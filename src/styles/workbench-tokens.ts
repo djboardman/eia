@@ -1,0 +1,35 @@
+export const workbenchTokens = {
+  fontSize: {
+    caption: '0.625rem',
+    ui: '0.75rem',
+    body: '0.875rem',
+    section: '1.125rem',
+    title: '1.875rem',
+  },
+  lineHeight: {
+    caption: '0.875rem',
+    ui: '1rem',
+    body: '1.25rem',
+    section: '1.5rem',
+    title: '2.25rem',
+  },
+  fontWeight: { regular: '400', medium: '400', semibold: '400', bold: '400' },
+  size: {
+    'sidebar-resizer': '0.25rem',
+    'control-compact': '1.5rem',
+    'control-default': '2rem',
+    'tree-row': '1.75rem',
+    'icon-default': '1rem',
+    'icon-compact': '0.875rem',
+    'title-icon': '1.875rem',
+    'editor-tabs': '2.25rem',
+  },
+  borderRadius: { sm: '0.25rem', md: '0.375rem', lg: '0.75rem', full: '9999px' },
+  boxShadow: {
+    floating: '0 4px 12px rgb(15 23 42 / 0.12)',
+    overlay: '0 16px 40px rgb(15 23 42 / 0.18)',
+  },
+  duration: { fast: '100ms', layout: '160ms' },
+  zIndex: { dropdown: '30', 'command-palette': '50', dialog: '60', notification: '70' },
+  breakpoints: { compact: '43.75rem', wide: '80rem' },
+} as const

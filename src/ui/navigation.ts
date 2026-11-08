@@ -1,6 +1,6 @@
-import { Boxes, Braces, Database, FileCode2, Folder, Route, Server, SquareArrowOutUpRight, Workflow } from 'lucide'
-import type { RecordType } from '../models/record-type'
-import { rootRecordTypeDefinitionId, type Workspace } from '../domain/workspace'
+import { Braces, Database, FileCode2, Folder, Server, SquareArrowOutUpRight } from 'lucide'
+import type { RecordType } from '../domain/record-types'
+import { rootRecordTypeDefinitionId, type TopLevelDefinition, type Workspace } from '../domain/workspace'
 import type { WorkspaceDispatcher } from '../state/dispatcher'
 import { dataTypeReferenceCount, findRecordType, recordTypeExternalReferenceCount } from '../state/selectors'
 import { createInlineEditor as createInlineEditorControl, createTreeAddControl, createTreeMoreControl } from './controls'
@@ -10,16 +10,11 @@ import { toUpperCamelCase, upperCamelCaseNamePattern } from './name-format'
 import { CommandRegistry } from './command-registry'
 import { createSidebarViewHeader } from './sidebar-view-header'
 import { registerWorkspaceTransferCommands } from './workspace-commands'
-import { parseWsdl } from './wsdl-import'
-
-interface NodeEditor {
-  kind: 'category' | 'recordType' | 'dataType' | 'dataScope' | 'middleware' | 'pipeline'
-  mode: 'create' | 'rename'
-  id?: string
-  parentId?: string
-  parentKind?: 'category' | 'children' | 'subtypes'
-  value?: string
-}
+import { parseWsdl } from '../integrations/wsdl/parser'
+import { browserFeedback } from './feedback'
+import { currentRoute, navigate, routes } from './routes'
+import { renderMiddlewareTree } from './explorer/middleware-tree'
+import type { ExplorerFeatureContext, NodeEditor } from './explorer/types'
 
 interface NavigationDependencies {
   workspace: Workspace
@@ -32,15 +27,21 @@ export const createNavigation = ({ workspace, navigation, dispatch, render }: Na
   let nodeEditor: NodeEditor | null = null
   const hierarchyOpenState = new Map<string, boolean>()
 const startEditing = (editor: NodeEditor) => {
-  if (editor.kind === 'category') hierarchyOpenState.set('root:record-types', true)
+  if (editor.kind === 'category') {
+    hierarchyOpenState.set('root:canonical-model', true)
+    hierarchyOpenState.set('root:record-types', true)
+  }
   if (editor.kind === 'recordType' && editor.parentKind === 'category') {
+    hierarchyOpenState.set('root:canonical-model', true)
     hierarchyOpenState.set('root:record-types', true)
     hierarchyOpenState.set(`category:${editor.parentId}`, true)
   }
   if (editor.kind === 'recordType' && editor.parentId) {
+    hierarchyOpenState.set('root:canonical-model', true)
     hierarchyOpenState.set(`record-type:${editor.parentId}`, true)
   }
   if (editor.kind === 'dataType') {
+    hierarchyOpenState.set('root:canonical-model', true)
     hierarchyOpenState.set('root:data-types', true)
     hierarchyOpenState.set('data-type:string', true)
   }
@@ -66,7 +67,7 @@ const finishEditing = (commit: boolean, value = '') => {
   nodeEditor = null
 
   if (commit && editor.kind === 'dataType' && name && !upperCamelCaseNamePattern.test(name)) {
-    window.alert('String subtype names must use UpperCamelCase and start with a letter.')
+    browserFeedback.error('String subtype names must use UpperCamelCase and start with a letter.')
     renderNavigation()
     return
   }
@@ -93,7 +94,7 @@ const finishEditing = (commit: boolean, value = '') => {
   } else if (editor.kind === 'dataType') {
     if (editor.mode === 'create') {
       const result = dispatch({ type: 'stringSubtype.create', definitionId: crypto.randomUUID(), name }, false)
-      window.location.hash = `data-types/string/${result.definitionId}`
+      navigate(routes.stringSubtype(result.definitionId ?? ''))
     } else {
       dispatch({ type: 'stringSubtype.update', definitionId: editor.id ?? '', changes: { name } })
     }
@@ -113,7 +114,7 @@ const finishEditing = (commit: boolean, value = '') => {
         definitionId: crypto.randomUUID(),
         name,
       }, false)
-      window.location.hash = `middleware/${editor.parentId}/pipeline/${result.definitionId}`
+      navigate(routes.pipeline(editor.parentId ?? '', result.definitionId ?? ''))
     } else {
       dispatch({ type: 'pipeline.rename', definitionId: editor.id ?? '', name })
     }
@@ -154,7 +155,7 @@ const uploadWsdl = (dataScopeDefinitionId: string, categoryDefinitionId: string)
         model: wsdl.model,
       })
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'The WSDL could not be imported.')
+      browserFeedback.error(error instanceof Error ? error.message : 'The WSDL could not be imported.')
     }
   }, { once: true })
   document.body.append(input)
@@ -187,7 +188,7 @@ function createRecordTypeTreeItem(
     if (isSelected) label.setAttribute('aria-current', 'page')
     label.addEventListener('click', (event) => {
       event.stopPropagation()
-      window.location.hash = `record-types/record-type/${recordType.definitionId}`
+      navigate(routes.recordType(recordType.definitionId))
     })
     row.append(label)
     if (!isRootRecordType) {
@@ -236,7 +237,7 @@ function createRecordTypeTreeItem(
               dispatch({ type: 'recordType.delete', definitionId: recordType.definitionId }, false)
               const selectedId = window.location.hash.match(/^#record-types\/record-type\/(.+)$/)?.[1]
               if (selectedId && !findRecordType(workspace, selectedId)) {
-                window.location.hash = 'record-types'
+                navigate(routes.recordTypes)
               } else {
                 render()
               }
@@ -435,7 +436,7 @@ const createDataTypeTree = () => {
         subtypeLabel.textContent = subtype.name
         if (isSelected) subtypeLabel.setAttribute('aria-current', 'page')
         subtypeLabel.addEventListener('click', () => {
-          window.location.hash = `data-types/string/${subtype.definitionId}`
+          navigate(routes.stringSubtype(subtype.definitionId))
         })
         const subtypeActions = document.createElement('span')
         subtypeActions.className = 'explorer-tree-item-actions'
@@ -460,7 +461,7 @@ const createDataTypeTree = () => {
             action: () => {
               dispatch({ type: 'stringSubtype.delete', definitionId: subtype.definitionId }, false)
               if (window.location.hash.endsWith(`/string/${subtype.definitionId}`)) {
-                window.location.hash = 'data-types'
+                navigate(routes.dataTypes)
               } else {
                 render()
               }
@@ -511,7 +512,7 @@ const createDataScopeTree = () => {
       categoryChildren.setAttribute('role', 'group')
       if (category.kind === 'apis') {
         for (const api of category.items) {
-          const apiRoute = `#applications/data-scope/${scope.definitionId}/api/${api.definitionId}`
+          const apiRoute = routes.api(scope.definitionId, api.definitionId)
           const apiLabel = document.createElement('a')
           apiLabel.className = 'explorer-tree-item-label-technical'
           apiLabel.textContent = api.name
@@ -633,209 +634,89 @@ const createApplicationTree = () => {
   return applicationList
 }
 
-const createMiddlewareTree = () => {
-  const middlewareList = document.createElement('ul')
-  middlewareList.className = 'explorer-tree-item-children'
-  middlewareList.setAttribute('role', 'group')
-
-  for (const middleware of workspace.middleware.items) {
-    const categoryList = document.createElement('ul')
-    categoryList.className = 'explorer-tree-item-children'
-    categoryList.setAttribute('role', 'group')
-    for (const category of middleware.categories) {
-      const pipelineChildren = document.createElement('ul')
-      pipelineChildren.className = 'explorer-tree-item-children'
-      pipelineChildren.setAttribute('role', 'group')
-      if (category.kind === 'pipelines') {
-        for (const pipeline of category.items) {
-          const route = `#middleware/${middleware.definitionId}/pipeline/${pipeline.definitionId}`
-          const rowContent: Node[] = [createLucideIcon(Route, 'explorer-tree-item-icon-data-scope')]
-          if (nodeEditor?.kind === 'pipeline' && nodeEditor.mode === 'rename' && nodeEditor.id === pipeline.definitionId) {
-            rowContent.push(createInlineEditor('Rename pipeline', pipeline.name, true))
-          } else {
-            const link = document.createElement('a')
-            link.className = 'explorer-tree-item-label-technical'
-            link.href = route
-            link.textContent = pipeline.name
-            link.addEventListener('click', (event) => event.stopPropagation())
-            const actions = document.createElement('span')
-            actions.className = 'explorer-tree-item-actions'
-            actions.append(createMoreControl([
-              {
-                label: 'Rename',
-                action: () => startEditing({
-                  kind: 'pipeline',
-                  mode: 'rename',
-                  id: pipeline.definitionId,
-                  parentId: middleware.definitionId,
-                  value: pipeline.name,
-                }),
-              },
-              {
-                label: 'Delete',
-                danger: true,
-                confirm: `Delete pipeline “${pipeline.name}”?`,
-                action: () => dispatch({ type: 'pipeline.delete', definitionId: pipeline.definitionId }),
-              },
-            ]))
-            rowContent.push(link, actions)
-          }
-          pipelineChildren.append(renderExplorerTreeItem({
-            rowContent,
-            selected: window.location.hash === route,
-          }, hierarchyOpenState))
-        }
-        if (nodeEditor?.kind === 'pipeline' && nodeEditor.mode === 'create'
-          && nodeEditor.parentId === middleware.definitionId) {
-          const editorItem = document.createElement('li')
-          editorItem.className = 'explorer-tree-item explorer-tree-editor-row'
-          editorItem.setAttribute('role', 'treeitem')
-          editorItem.append(
-            Object.assign(document.createElement('span'), { className: 'explorer-tree-item-expander-spacer' }),
-            createLucideIcon(Route, 'explorer-tree-item-icon-data-scope'),
-            createInlineEditor('New pipeline', '', true),
-          )
-          pipelineChildren.append(editorItem)
-        }
-      }
-      const icon = category.kind === 'apis'
-        ? Server
-        : category.kind === 'clients' ? SquareArrowOutUpRight : Workflow
-      const label = document.createElement('span')
-      label.className = 'explorer-tree-item-label'
-      label.textContent = category.name
-      const actions = document.createElement('span')
-      actions.className = 'explorer-tree-item-actions'
-      if (category.kind === 'pipelines') {
-        actions.append(createAddControl([{
-          label: 'Pipeline',
-          action: () => startEditing({
-            kind: 'pipeline',
-            mode: 'create',
-            parentId: middleware.definitionId,
-          }),
-        }]))
-      }
-      categoryList.append(renderExplorerTreeItem({
-        rowContent: [
-          createLucideIcon(icon, 'explorer-tree-item-icon-data-scope'),
-          label,
-          actions,
-        ],
-        children: category.kind === 'pipelines' ? pipelineChildren : undefined,
-        stateKey: `middleware:${middleware.definitionId}:${category.kind}`,
-        defaultOpen: category.kind === 'pipelines',
-      }, hierarchyOpenState))
-    }
-
-    const rowContent: Node[] = [createLucideIcon(Boxes, 'explorer-tree-item-icon-data-scope')]
-    if (nodeEditor?.kind === 'middleware' && nodeEditor.mode === 'rename' && nodeEditor.id === middleware.definitionId) {
-      rowContent.push(createInlineEditor('Rename middleware', middleware.name, true))
-    } else {
-      const label = document.createElement('span')
-      label.className = 'explorer-tree-item-label-technical'
-      label.textContent = middleware.name
-      const actions = document.createElement('span')
-      actions.className = 'explorer-tree-item-actions'
-      actions.append(createMoreControl([
-        {
-          label: 'Rename',
-          action: () => startEditing({
-            kind: 'middleware',
-            mode: 'rename',
-            id: middleware.definitionId,
-            value: middleware.name,
-          }),
-        },
-        {
-          label: 'Delete',
-          danger: true,
-          confirm: `Delete middleware “${middleware.name}”?`,
-          action: () => dispatch({ type: 'middleware.delete', definitionId: middleware.definitionId }),
-        },
-      ]))
-      rowContent.push(label, actions)
-    }
-    middlewareList.append(renderExplorerTreeItem({
-      rowContent,
-      children: categoryList,
-      stateKey: `middleware:${middleware.definitionId}`,
-      defaultOpen: true,
-    }, hierarchyOpenState))
-  }
-
-  if (nodeEditor?.kind === 'middleware' && nodeEditor.mode === 'create') {
-    const editorItem = document.createElement('li')
-    editorItem.className = 'explorer-tree-item explorer-tree-editor-row'
-    editorItem.setAttribute('role', 'treeitem')
-    editorItem.append(
-      Object.assign(document.createElement('span'), { className: 'explorer-tree-item-expander-spacer' }),
-      createLucideIcon(Boxes, 'explorer-tree-item-icon-data-scope'),
-      createInlineEditor('New middleware', '', true),
-    )
-    middlewareList.append(editorItem)
-  }
-
-  return middlewareList
-}
-
 const renderNavigation = () => {
   navigation.replaceChildren()
   const rootList = document.createElement('ul')
   rootList.className = 'explorer-tree'
   rootList.setAttribute('role', 'tree')
-  const route = window.location.hash || '#record-types'
-  const roots = workspace.topLevels.map(({ id, label }) => ({
-    label,
-    href: `#${id}`,
-    children:
-      id === 'record-types'
-        ? createCategoryTree()
-        : id === 'data-types'
-          ? createDataTypeTree()
-          : id === 'applications'
-            ? createApplicationTree()
-            : id === 'middleware'
-              ? createMiddlewareTree()
-            : undefined,
-  }))
-
-  for (const root of roots) {
-    const rootKey = `root:${root.href.slice(1)}`
-    const isRootSelected = root.children ? route.startsWith(root.href) : route === root.href
+  const route = currentRoute()
+  const routableTopLevels = new Set(['record-types', 'data-types', 'applications', 'middleware', 'data-flows'])
+  const featureChildren = (id: string) =>
+    id === 'record-types'
+      ? createCategoryTree()
+      : id === 'data-types'
+        ? createDataTypeTree()
+        : id === 'applications'
+          ? createApplicationTree()
+          : id === 'middleware'
+            ? renderMiddlewareTree({
+                workspace,
+                nodeEditor,
+                hierarchyOpenState,
+                dispatch,
+                startEditing,
+                createInlineEditor,
+                createAddControl,
+                createMoreControl,
+              } satisfies ExplorerFeatureContext)
+            : undefined
+  const isTopLevelSelected = (definition: TopLevelDefinition): boolean => {
+    const href = `#${definition.id}`
+    const ownRouteSelected = routableTopLevels.has(definition.id)
+      && (definition.id === 'data-flows' ? route === href : route.startsWith(href))
+    return ownRouteSelected || (definition.children ?? []).some(isTopLevelSelected)
+  }
+  const renderTopLevel = (definition: TopLevelDefinition): HTMLLIElement => {
+    const rootKey = `root:${definition.id}`
+    const isRootSelected = isTopLevelSelected(definition)
     const summary = document.createElement('div')
-    const link = document.createElement('a')
-    link.className = 'explorer-tree-item-label'
-    link.href = root.href
-    link.textContent = root.label
-    link.addEventListener('click', (event) => event.stopPropagation())
-    if (isRootSelected) link.setAttribute('aria-current', 'page')
-    summary.append(createLucideIcon(Folder, 'explorer-tree-item-icon-structural'), link)
+    const label = document.createElement(routableTopLevels.has(definition.id) ? 'a' : 'span')
+    label.className = 'explorer-tree-item-label'
+    label.textContent = definition.label
+    if (label instanceof HTMLAnchorElement) {
+      label.href = `#${definition.id}`
+      label.addEventListener('click', (event) => event.stopPropagation())
+      if (isRootSelected) label.setAttribute('aria-current', 'page')
+    }
+    summary.append(createLucideIcon(Folder, 'explorer-tree-item-icon-structural'), label)
 
-    if (root.href === '#record-types' || root.href === '#middleware') {
+    if (definition.id === 'record-types' || definition.id === 'middleware') {
       const actions = document.createElement('span')
       actions.className = 'explorer-tree-item-actions'
       actions.append(createAddControl([{
-        label: root.href === '#record-types' ? 'Category' : 'Middleware',
-        action: () => startEditing(root.href === '#record-types'
+        label: definition.id === 'record-types' ? 'Category' : 'Middleware',
+        action: () => startEditing(definition.id === 'record-types'
           ? { kind: 'category', mode: 'create' }
           : { kind: 'middleware', mode: 'create' }),
       }]))
       summary.append(actions)
     }
-    rootList.append(renderExplorerTreeItem({
+    let children: HTMLUListElement | undefined
+    if (definition.children?.length) {
+      children = document.createElement('ul')
+      children.className = 'explorer-tree-item-children'
+      children.setAttribute('role', 'group')
+      children.append(...definition.children.map(renderTopLevel))
+    } else {
+      children = featureChildren(definition.id)
+    }
+    return renderExplorerTreeItem({
       rowContent: Array.from(summary.childNodes),
-      children: root.children,
+      children,
       stateKey: rootKey,
-      defaultOpen: isRootSelected,
-    }, hierarchyOpenState))
+      defaultOpen: definition.id === 'canonical-model' || isRootSelected,
+    }, hierarchyOpenState)
+  }
+
+  for (const root of workspace.topLevels) {
+    rootList.append(renderTopLevel(root))
   }
 
   const commands = new CommandRegistry()
   const importInput = registerWorkspaceTransferCommands(commands, workspace, (importedWorkspace) => {
     nodeEditor = null
     dispatch({ type: 'workspace.replace', workspace: importedWorkspace }, false)
-    window.location.hash = 'record-types'
+    navigate(routes.recordTypes)
     render()
   })
   navigation.append(

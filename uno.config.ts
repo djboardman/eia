@@ -1,6 +1,10 @@
 import { defineConfig, presetWind3 } from 'unocss'
-import { editorShortcuts } from './src/styles/editor-shortcuts'
+import { contractShortcuts } from './src/styles/contract-shortcuts'
+import { dataTypeShortcuts } from './src/styles/data-type-shortcuts'
+import { editorPrimitivesShortcuts } from './src/styles/editor-primitives-shortcuts'
 import { explorerShortcuts } from './src/styles/explorer-shortcuts'
+import { pipelineShortcuts } from './src/styles/pipeline-shortcuts'
+import { recordTypeShortcuts } from './src/styles/record-type-shortcuts'
 import { sourceControlShortcuts } from './src/styles/source-control-shortcuts'
 import { workbenchShortcuts } from './src/styles/workbench-shortcuts'
 import { workbenchTheme } from './src/styles/workbench-theme'
@@ -22,6 +26,10 @@ export default defineConfig({
     ...workbenchShortcuts,
     ...explorerShortcuts,
     ...sourceControlShortcuts,
-    ...editorShortcuts,
+    ...editorPrimitivesShortcuts,
+    ...recordTypeShortcuts,
+    ...dataTypeShortcuts,
+    ...contractShortcuts,
+    ...pipelineShortcuts,
   },
 })

@@ -1,10 +1,10 @@
-import type { Category } from '../models/category'
 import type {
   AttributeDefinition,
+  Category,
   RecordType,
   RecordTypeKind,
   RelationshipAttributeDefinition,
-} from '../models/record-type'
+} from '../domain/record-types'
 import {
   createEmptyWorkspace,
   createDataScopeCategories,
@@ -18,11 +18,13 @@ import {
   type PipelineDataTypeReference,
   type PipelineTransformMapping,
   type StringDataTypeSubtype,
+  type TopLevelDefinition,
   type Workspace,
   type WsdlApiModel,
 } from '../domain/workspace'
 import { dataTypeDefinitionIdForLegacyName } from '../domain/data-types'
-import { parseWsdl } from '../ui/wsdl-import'
+import { parseWsdl } from '../integrations/wsdl/parser'
+import { applyWorkspaceMigrationSteps } from './workspace-migration-steps'
 
 type JsonObject = Record<string, unknown>
 type StoredAttribute = Partial<AttributeDefinition> & { dataType?: string }
@@ -31,6 +33,18 @@ const isObject = (value: unknown): value is JsonObject => Boolean(value) && type
 const asArray = (value: unknown) => Array.isArray(value) ? value : []
 const asString = (value: unknown, fallback = '') => typeof value === 'string' ? value : fallback
 const recordTypeKinds: RecordTypeKind[] = ['social', 'physical', 'countsAs']
+
+const normalizeTopLevels = (value: unknown): TopLevelDefinition[] => asArray(value)
+  .filter(isObject)
+  .map((level) => {
+    const children = normalizeTopLevels(level.children)
+    return {
+      id: asString(level.id),
+      label: asString(level.label),
+      ...(children.length ? { children } : {}),
+    }
+  })
+  .filter(({ id, label }) => Boolean(id && label))
 
 const normalizeWsdlModel = (api: JsonObject, source: JsonObject): WsdlApiModel => {
   if (isObject(api.model)) {
@@ -199,6 +213,8 @@ export const migrateWorkspace = (value: unknown): Workspace => {
   if (!isObject(value)) throw new Error('Workspace must be a JSON object.')
   const version = Number(value.schemaVersion ?? 1)
   if (version < 1 || version > workspaceSchemaVersion) throw new Error(`Unsupported workspace schema version: ${version}.`)
+  value = applyWorkspaceMigrationSteps(value, version)
+  if (!isObject(value)) throw new Error('Workspace migration produced invalid data.')
   if (!isObject(value.recordTypes) || !isObject(value.dataTypes)) throw new Error('Workspace recordTypes and dataTypes are required.')
 
   const empty = createEmptyWorkspace()
@@ -217,10 +233,7 @@ export const migrateWorkspace = (value: unknown): Workspace => {
   const storedDataScopes = storedDataScopeCollection
     ? storedDataScopeCollection.items
     : applications.dataScopes
-  const topLevels = asArray(value.topLevels).filter(isObject).map((level) => ({
-    id: asString(level.id),
-    label: asString(level.label),
-  })).filter(({ id, label }) => Boolean(id && label))
+  const topLevels = normalizeTopLevels(value.topLevels)
   const normalizedTopLevels = topLevels.length ? topLevels : structuredClone(empty.topLevels)
   if (!normalizedTopLevels.some(({ id }) => id === 'middleware')) {
     const dataFlowsIndex = normalizedTopLevels.findIndex(({ id }) => id === 'data-flows')

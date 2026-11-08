@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangeJournalEntry } from '../domain/change-journal'
 import { createEmptyWorkspace, createEmptyWsdlApiModel } from '../domain/workspace'
-import { describeJournalEntries, groupJournalEntries } from './source-control'
+import { describeJournalEntries, groupJournalEntries } from '../state/commands/presentation'
 
 const entry = (revision: number, command: ChangeJournalEntry['command']): ChangeJournalEntry => ({
   id: String(revision),

@@ -1,4 +1,12 @@
-import type { StringDataTypeSubtype, Workspace } from './workspace'
+import type { Workspace } from './workspace'
+
+export interface StringDataTypeSubtype {
+  definitionId: string
+  name: string
+  pattern: string
+  example: string
+  description: string
+}
 
 export const basicDataTypeDefinitionId = (name: string) => `json:${name}`
 

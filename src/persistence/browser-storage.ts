@@ -1,4 +1,4 @@
-import type { Category } from '../models/category'
+import type { Category } from '../domain/record-types'
 import {
   createEmptyWorkspace,
   createDataScopeCategories,
@@ -8,8 +8,9 @@ import {
   type Workspace,
 } from '../domain/workspace'
 import { migrateWorkspace, normalizeRecordType, normalizeStringSubtypes } from './migrations'
+import { activeRepositoryStorageKeys } from './storage-keys'
 
-const workspaceStorageKey = 'eia-workspace'
+const workspaceStorageKey = activeRepositoryStorageKeys.workspace
 const legacyKeys = {
   categories: 'eia-record-type-categories',
   rootRecord: 'eia-root-record-type',

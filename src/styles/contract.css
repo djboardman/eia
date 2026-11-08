@@ -1,0 +1,7 @@
+.api-contract[open] > .api-contract-summary .api-contract-chevron {
+  transform: rotate(90deg);
+}
+
+.api-contract-summary::-webkit-details-marker {
+  display: none;
+}

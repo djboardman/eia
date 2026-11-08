@@ -1,6 +1,6 @@
 import { createEmptyWsdlApiModel } from '../domain/workspace'
 import { migrateWorkspace } from '../persistence/migrations'
-import { parseWsdl } from '../ui/wsdl-import'
+import { parseWsdl } from '../integrations/wsdl/parser'
 import type { WorkspaceCommand } from './commands'
 
 type JsonObject = Record<string, unknown>

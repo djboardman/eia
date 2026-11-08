@@ -1,8 +1,9 @@
 import type { ChangeJournalEntry } from '../domain/change-journal'
 import type { WorkspaceCommand } from '../state/commands'
 import { parseWorkspaceCommand } from '../state/command-validation'
+import { activeRepositoryStorageKeys } from './storage-keys'
 
-const changeJournalStorageKey = 'eia-change-journal'
+const changeJournalStorageKey = activeRepositoryStorageKeys.journal
 type JournalStorage = Pick<Storage, 'getItem' | 'setItem'>
 
 export const parseChangeJournal = (value: unknown, firstRevision = 1): ChangeJournalEntry[] => {

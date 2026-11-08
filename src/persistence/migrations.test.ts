@@ -34,11 +34,47 @@ describe('workspace migrations', () => {
     const workspace = migrateWorkspace(versionOneWorkspace)
     const attributes = workspace.recordTypes.categories[0].recordTypes[0].attributes
 
-    expect(workspace.schemaVersion).toBe(9)
+    expect(workspace.schemaVersion).toBe(12)
     expect(workspace.recordTypes.categories[0].recordTypes[0].kind).toBe('social')
     expect(attributes.map(({ dataTypeDefinitionId }) => dataTypeDefinitionId)).toEqual(['iso-date', 'json:number'])
-    expect(workspace.topLevels).toHaveLength(5)
-    expect(workspace.topLevels[3]).toEqual({ id: 'middleware', label: 'Middleware' })
+    expect(workspace.topLevels).toHaveLength(4)
+    expect(workspace.topLevels[0]).toEqual({
+      id: 'canonical-model',
+      label: 'Canonical Model',
+      children: [
+        { id: 'record-types', label: 'Record Types' },
+        { id: 'data-types', label: 'Data Types' },
+        {
+          id: 'serialized',
+          label: 'Serialized',
+          children: [
+            {
+              id: 'api-payloads',
+              label: 'API Payloads',
+              children: [{ id: 'request-from-source', label: 'Request From Source' }],
+            },
+            {
+              id: 'middleware-canonical',
+              label: 'Middleware Payloads',
+              children: [
+                { id: 'from-source', label: 'From Source' },
+                { id: 'middleware-serialized', label: 'Middleware' },
+                { id: 'to-target', label: 'To Target' },
+              ],
+            },
+            {
+              id: 'client-payloads',
+              label: 'CLIENT Payloads',
+              children: [
+                { id: 'response-from-source', label: 'Response From Source' },
+                { id: 'request-to-target', label: 'Request To Target' },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    expect(workspace.topLevels[2]).toEqual({ id: 'middleware', label: 'Middleware' })
     expect(workspace.applications.dataScopeCollection).toEqual({
       definitionId: '__data_scopes__',
       name: 'Data Scopes',

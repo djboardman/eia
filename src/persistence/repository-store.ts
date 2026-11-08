@@ -4,6 +4,7 @@ import type { Workspace } from '../domain/workspace'
 import { parseChangeJournal } from './change-journal'
 import { migrateLocalRepository } from './local-repository-migrations'
 import { migrateWorkspace } from './migrations'
+import { activeRepositoryStorageKeys } from './storage-keys'
 
 export type RepositoryStoreStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -13,11 +14,7 @@ export interface RepositorySnapshot {
   repository: LocalRepository
 }
 
-const activeKeys = {
-  workspace: 'eia-workspace',
-  journal: 'eia-change-journal',
-  repository: 'eia-local-repository',
-} as const
+const activeKeys = activeRepositoryStorageKeys
 
 const snapshotKey = (repositoryId: string) => `eia-repository:${repositoryId}:snapshot`
 const legacyKey = (repositoryId: string, activeKey: string) => `eia-repository:${repositoryId}:${activeKey}`

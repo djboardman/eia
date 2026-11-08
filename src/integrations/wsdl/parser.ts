@@ -3,7 +3,7 @@ import type {
   WsdlConstraint,
   WsdlContract,
   WsdlSchemaField,
-} from '../domain/workspace'
+} from '../../domain/workspace'
 
 export interface WsdlImport {
   name: string

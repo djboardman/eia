@@ -1,5 +1,5 @@
 import { recordTypeIdAttributeDefinitionId, rootRecordTypeDefinitionId, type Workspace } from '../domain/workspace'
-import type { AttributeDefinition, RecordType, RelationshipAttributeDefinition } from '../models/record-type'
+import type { AttributeDefinition, RecordType, RelationshipAttributeDefinition } from '../domain/record-types'
 import { basicDataTypeDefinitionId } from '../domain/data-types'
 
 export interface RecordTypeContext {
@@ -65,14 +65,10 @@ export const resolveRelationshipAttribute = (
       }
     : sourceRecordType?.attributes.find(({ definitionId }) => definitionId === relationship.attributeDefinitionId)
   if (!sourceRecordType || !sourceAttribute) return undefined
-  const role = relationship.role?.trim()
-  const roleAttributeName = role
-    ? `${role}${sourceAttribute.name.charAt(0).toUpperCase()}${sourceAttribute.name.slice(1)}`
-    : sourceAttribute.name
   return {
     ...sourceAttribute,
     definitionId: relationship.definitionId,
-    name: `${sourceRecordType.name}_${roleAttributeName}`,
+    name: sourceAttribute.name,
   }
 }
 
@@ -88,14 +84,6 @@ export const lowestSubtypeRecordTypes = (recordType: RecordType): RecordType[] =
   recordType.subtypes.length === 0
     ? [recordType]
     : recordType.subtypes.flatMap(lowestSubtypeRecordTypes)
-
-export const includedRecordTypesFor = (recordType: RecordType) =>
-  recordType.children.flatMap((child) =>
-    lowestSubtypeRecordTypes(child).map((included) => ({
-      recordType: included,
-      relationship: included === child ? 'child' as const : 'subtype' as const,
-    })),
-  )
 
 export const relationshipReferenceCount = (workspace: Workspace, attributeDefinitionId: string) =>
   getAllRecordTypes(workspace).reduce(

@@ -1,5 +1,6 @@
 :root,
-:root[data-theme='light'] {
+:root[data-theme='light'],
+.theme-preview[data-theme='light'] {
   color-scheme: light;
   --color-brand-500: #2563eb;
   --color-brand-600: #1d4ed8;
@@ -51,7 +52,8 @@
   --color-entity-inherited: #2563eb;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+.theme-preview[data-theme='dark'] {
   color-scheme: dark;
   --color-brand-500: #2563eb;
   --color-brand-600: #1d4ed8;
@@ -101,4 +103,59 @@
   --color-entity-data-scope: #22d3ee;
   --color-entity-relationship: #34d399;
   --color-entity-inherited: #60a5fa;
+}
+
+:root[data-theme='dracula'],
+.theme-preview[data-theme='dracula'] {
+  color-scheme: dark;
+  --color-brand-500: #bd93f9;
+  --color-brand-600: #ff79c6;
+  --color-canvas: #282a36;
+  --color-surface: #282a36;
+  --color-surface-subtle: #44475a;
+  --color-surface-muted: #6272a4;
+  --color-chrome-title: #282a36;
+  --color-chrome-activity: #282a36;
+  --color-chrome-activity-hover: #44475a;
+  --color-chrome-status: #bd93f9;
+  --color-text-primary: #f8f8f2;
+  --color-text-secondary: #f8f8f2;
+  --color-text-muted: #6272a4;
+  --color-text-faint: #6272a4;
+  --color-text-inverse: #282a36;
+  --color-border: #6272a4;
+  --color-border-subtle: #44475a;
+  --color-border-strong: #6272a4;
+  --color-resizer: transparent;
+  --color-resizer-hover: #6272a4;
+  --color-resizer-active: #bd93f9;
+  --color-current-line: #6272a4;
+  --color-selection: #44475a;
+  --color-accent-50: #44475a;
+  --color-accent-100: #44475a;
+  --color-accent-200: #6272a4;
+  --color-accent-300: #bd93f9;
+  --color-accent-500: #bd93f9;
+  --color-accent-600: #ff79c6;
+  --color-accent-700: #8be9fd;
+  --color-accent-900: #f8f8f2;
+  --color-success-50: #44475a;
+  --color-success-600: #50fa7b;
+  --color-success-700: #50fa7b;
+  --color-warning-50: #44475a;
+  --color-warning-600: #ffb86c;
+  --color-warning-700: #f1fa8c;
+  --color-danger-50: #44475a;
+  --color-danger-600: #ff5555;
+  --color-danger-700: #ff5555;
+  --color-info-50: #44475a;
+  --color-info-600: #8be9fd;
+  --color-info-700: #8be9fd;
+  --color-editor-attribute-name: #50fa7b;
+  --color-editor-type-name: #8be9fd;
+  --color-entity-record-type: #bd93f9;
+  --color-entity-data-type: #ffb86c;
+  --color-entity-data-scope: #8be9fd;
+  --color-entity-relationship: #ff79c6;
+  --color-entity-inherited: #50fa7b;
 }

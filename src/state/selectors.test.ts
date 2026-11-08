@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyWorkspace } from '../domain/workspace'
 import { basicDataTypeDefinitionId } from '../domain/data-types'
-import type { RecordType } from '../models/record-type'
+import type { RecordType } from '../domain/record-types'
 import {
   findRecordTypeContext,
-  includedRecordTypesFor,
   resolveRelationshipAttribute,
 } from './selectors'
 
@@ -40,19 +39,7 @@ describe('record type selectors', () => {
     expect(findRecordTypeContext(workspace, 'child')?.parentRecordType).toBe(parent)
   })
 
-  it('includes only the lowest subtype below each child', () => {
-    const parent = recordType('parent', 'Parent')
-    const child = recordType('child', 'Child')
-    const subtype = recordType('subtype', 'Subtype')
-    const leaf = recordType('leaf', 'Leaf')
-    subtype.subtypes.push(leaf)
-    child.subtypes.push(subtype)
-    parent.children.push(child)
-
-    expect(includedRecordTypesFor(parent)).toEqual([{ recordType: leaf, relationship: 'subtype' }])
-  })
-
-  it('resolves relationship names and source data-type IDs', () => {
+  it('resolves relationship source attributes without serialization naming', () => {
     const workspace = createEmptyWorkspace()
     const source = recordType('source', 'Account')
     source.attributes.push({
@@ -69,7 +56,7 @@ describe('record type selectors', () => {
       attributeDefinitionId: 'code',
     })
 
-    expect(resolved?.name).toBe('Account_creditCode')
+    expect(resolved?.name).toBe('code')
     expect(resolved?.dataTypeDefinitionId).toBe('json:string')
   })
 })

@@ -1,11 +1,14 @@
 import { Settings, X } from 'lucide'
 import { createLucideIcon } from './icons'
 
-export type ThemeName = 'light' | 'dark'
+export type ThemeName = 'light' | 'dark' | 'dracula'
 
 const themeStorageKey = 'eia-theme'
 
-const loadTheme = (): ThemeName => localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'
+const loadTheme = (): ThemeName => {
+  const stored = localStorage.getItem(themeStorageKey)
+  return stored === 'dark' || stored === 'dracula' ? stored : 'light'
+}
 
 const applyTheme = (theme: ThemeName) => {
   document.documentElement.dataset.theme = theme
@@ -54,7 +57,7 @@ export const createThemeSettings = (activityBar: HTMLElement) => {
   const select = document.createElement('select')
   select.className = 'ui-select-control'
   select.setAttribute('aria-label', 'Colour theme')
-  for (const [value, optionLabel] of [['light', 'Light'], ['dark', 'Dark']] as const) {
+  for (const [value, optionLabel] of [['light', 'Light'], ['dark', 'Dark'], ['dracula', 'Dracula']] as const) {
     const option = document.createElement('option')
     option.value = value
     option.textContent = optionLabel

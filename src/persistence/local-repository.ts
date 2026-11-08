@@ -8,8 +8,9 @@ import type { Workspace } from '../domain/workspace'
 import { loadChangeJournal } from './change-journal'
 import { replayChangeJournal } from '../state/journal-replay'
 import { migrateLocalRepository } from './local-repository-migrations'
+import { activeRepositoryStorageKeys } from './storage-keys'
 
-const localRepositoryStorageKey = 'eia-local-repository'
+const localRepositoryStorageKey = activeRepositoryStorageKeys.repository
 type RepositoryStorage = Pick<Storage, 'getItem' | 'setItem'>
 
 const latestRevision = (journal: readonly ChangeJournalEntry[]) => journal.at(-1)?.revision ?? 0

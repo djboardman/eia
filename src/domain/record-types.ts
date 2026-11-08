@@ -24,3 +24,9 @@ export interface RecordType {
   children: RecordType[]
   subtypes: RecordType[]
 }
+
+export interface Category {
+  id: string
+  name: string
+  recordTypes: RecordType[]
+}

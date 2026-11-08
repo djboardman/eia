@@ -1,19 +1,20 @@
-import { ArrowLeftRight, ChevronRight, GripVertical, LockKeyhole, Link2, Plus, Shapes } from 'lucide'
-import type { AttributeDefinition, RecordType, RecordTypeKind, RelationshipAttributeDefinition } from '../../models/record-type'
+import { ChevronRight, GripVertical, LockKeyhole, Link2, Plus, Shapes } from 'lucide'
+import type { AttributeDefinition, RecordType, RecordTypeKind, RelationshipAttributeDefinition } from '../../domain/record-types'
 import { recordTypeIdAttributeDefinitionId, rootRecordTypeDefinitionId, type Workspace } from '../../domain/workspace'
 import { getDataTypeOptions, resolveDataTypeName } from '../../domain/data-types'
 import type { WorkspaceDispatcher } from '../../state/dispatcher'
 import {
   findRecordType as selectRecordType,
   findRecordTypeContext as selectRecordTypeContext,
-  getAllRecordTypes as selectAllRecordTypes,
-  includedRecordTypesFor,
   relationshipReferenceCount,
   resolveRelationshipAttribute as selectRelationshipAttribute,
-  resolvedAttributesFor as selectResolvedAttributes,
   type RecordTypeContext,
 } from '../../state/selectors'
 import { createDeleteButton as createAttributeDeleteButton, createToggleButton as createConstraintButton } from '../controls'
+import {
+  openHierarchySelectorDialog,
+  type HierarchySelectorItem,
+} from '../hierarchy-selector-dialog'
 import { createLucideIcon, createRecordTypeIcon, type RecordTypeRelationship } from '../icons'
 
 interface RecordTypePageDependencies {
@@ -25,15 +26,38 @@ interface RecordTypePageDependencies {
 
 export const createRecordTypePage = ({ workspace, content, dispatch, render }: RecordTypePageDependencies) => {
   let draggedAttributeId: string | null = null
-  const relationshipSelectorViews = new Map<string, boolean>()
   const attributeGroupViews = new Map<string, boolean>()
 const findRecordTypeContext = (definitionId: string): RecordTypeContext | undefined =>
   selectRecordTypeContext(workspace, definitionId)
 const findRecordType = (definitionId: string) => selectRecordType(workspace, definitionId)
-const getAllRecordTypes = () => selectAllRecordTypes(workspace)
+const recordTypeHierarchyItem = (recordType: RecordType): HierarchySelectorItem => ({
+  id: recordType.definitionId,
+  label: recordType.name,
+  children: [...recordType.children, ...recordType.subtypes].map(recordTypeHierarchyItem),
+})
+const getRecordTypeHierarchy = (): HierarchySelectorItem[] => [
+  recordTypeHierarchyItem(workspace.recordTypes.root),
+  ...workspace.recordTypes.categories.map((category) => ({
+    id: `category:${category.id}`,
+    label: category.name,
+    selectable: false,
+    children: category.recordTypes.map(recordTypeHierarchyItem),
+  })),
+]
 const resolveRelationshipAttribute = (relationship: RelationshipAttributeDefinition) =>
   selectRelationshipAttribute(workspace, relationship)
-const resolvedAttributesFor = (recordType: RecordType) => selectResolvedAttributes(workspace, recordType)
+const attributesForInheritedDisplay = (recordType: RecordType): AttributeDefinition[] => [
+  ...recordType.attributes,
+  ...recordType.relationshipAttributes.flatMap((relationship) => {
+    const attribute = resolveRelationshipAttribute(relationship)
+    const relatedType = findRecordType(relationship.recordTypeDefinitionId)
+    if (!attribute || !relatedType) return []
+    return [{
+      ...attribute,
+      name: [relatedType.name, relationship.role?.trim(), attribute.name].filter(Boolean).join(' '),
+    }]
+  }),
+]
 
 const createSchemaBadge = (label: string) => {
   const badge = document.createElement('span')
@@ -175,26 +199,33 @@ const createRelationshipAttributeRow = (
   row.dataset.attributeId = relationship.definitionId
 
   const resolved = resolveRelationshipAttribute(relationship)
-  const selectorOpen = relationshipSelectorViews.get(relationship.definitionId) ?? !resolved
-  if (selectorOpen) row.classList.add('relationship-selector-open')
-  const name = document.createElement('strong')
-  name.className = 'relationship-attribute-name'
-  name.textContent = resolved?.name ?? ''
+  row.classList.add('relationship-selector-open')
 
-  const source = document.createElement('select')
-  source.className = 'relationship-control technical-name'
+  const selectedRecordType = findRecordType(relationship.recordTypeDefinitionId)
+  const source = document.createElement('button')
+  source.className = 'relationship-control hierarchy-selector-trigger technical-name'
+  source.type = 'button'
   source.setAttribute('aria-label', 'Relationship record type')
-  const sourcePlaceholder = document.createElement('option')
-  sourcePlaceholder.value = ''
-  sourcePlaceholder.textContent = 'Record type…'
-  source.append(sourcePlaceholder)
-  for (const recordType of getAllRecordTypes()) {
-    const option = document.createElement('option')
-    option.value = recordType.definitionId
-    option.textContent = recordType.name
-    option.selected = recordType.definitionId === relationship.recordTypeDefinitionId
-    source.append(option)
-  }
+  source.textContent = selectedRecordType?.name ?? 'Record type…'
+  source.addEventListener('click', () => {
+    openHierarchySelectorDialog({
+      title: 'Select relationship record type',
+      items: getRecordTypeHierarchy(),
+      selectedId: relationship.recordTypeDefinitionId,
+      searchPlaceholder: 'Search record types',
+      onSelect: (item) => {
+        dispatch({
+          type: 'relationshipAttribute.update',
+          recordTypeDefinitionId: recordType.definitionId,
+          definitionId: relationship.definitionId,
+          changes: {
+            recordTypeDefinitionId: item.id,
+            attributeDefinitionId: recordTypeIdAttributeDefinitionId,
+          },
+        })
+      },
+    })
+  })
 
   const role = document.createElement('input')
   role.className = 'relationship-control technical-name'
@@ -209,7 +240,6 @@ const createRelationshipAttributeRow = (
   attributePlaceholder.value = ''
   attributePlaceholder.textContent = 'Attribute…'
   attribute.append(attributePlaceholder)
-  const selectedRecordType = findRecordType(relationship.recordTypeDefinitionId)
   if (selectedRecordType) {
     const idOption = document.createElement('option')
     idOption.value = recordTypeIdAttributeDefinitionId
@@ -225,17 +255,6 @@ const createRelationshipAttributeRow = (
     attribute.append(option)
   }
 
-  source.addEventListener('change', () => {
-    dispatch({
-      type: 'relationshipAttribute.update',
-      recordTypeDefinitionId: recordType.definitionId,
-      definitionId: relationship.definitionId,
-      changes: {
-        recordTypeDefinitionId: source.value,
-        attributeDefinitionId: source.value ? recordTypeIdAttributeDefinitionId : '',
-      },
-    })
-  })
   role.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') role.blur()
   })
@@ -248,7 +267,6 @@ const createRelationshipAttributeRow = (
     })
   })
   attribute.addEventListener('change', () => {
-    if (attribute.value) relationshipSelectorViews.set(relationship.definitionId, false)
     dispatch({
       type: 'relationshipAttribute.update',
       recordTypeDefinitionId: recordType.definitionId,
@@ -257,42 +275,25 @@ const createRelationshipAttributeRow = (
     })
   })
 
-  const type = document.createElement('span')
-  type.className = 'schema-type'
-  type.textContent = resolved ? resolveDataTypeName(workspace, resolved.dataTypeDefinitionId) ?? '—' : '—'
-
   const controls = document.createElement('div')
   controls.className = 'relationship-controls'
   controls.append(source, role, attribute)
 
+  const type = document.createElement('span')
+  type.className = 'schema-type relationship-data-type'
+  type.textContent = resolved ? resolveDataTypeName(workspace, resolved.dataTypeDefinitionId) ?? '—' : '—'
+
   const constraints = document.createElement('div')
-  constraints.className = 'schema-constraints'
+  constraints.className = 'schema-constraints relationship-constraints'
   constraints.append(createSchemaBadge('Optional'))
 
-  const switchView = document.createElement('button')
-  switchView.className = 'attribute-mode-switch relationship-mode-switch'
-  switchView.type = 'button'
-  switchView.disabled = selectorOpen && !resolved
-  switchView.title =
-    selectorOpen && !resolved
-      ? 'Select a record type and attribute first'
-      : selectorOpen
-        ? 'Show generated attribute name'
-        : 'Show relationship selector'
-  switchView.setAttribute('aria-label', switchView.title)
-  switchView.append(
-    createLucideIcon(ArrowLeftRight, 'tree-action-icon'),
-    selectorOpen ? 'Name' : 'Relationship',
-  )
-  switchView.addEventListener('click', () => {
-    relationshipSelectorViews.set(relationship.definitionId, !selectorOpen)
-    render()
-  })
-
   const deleteButton = createAttributeDeleteButton(
-    `relationship attribute “${resolved?.name ?? 'incomplete relationship'}”`,
+    `relationship “${[
+      selectedRecordType?.name,
+      relationship.role?.trim(),
+      resolved?.name,
+    ].filter(Boolean).join(' · ') || 'incomplete relationship'}”`,
     () => {
-      relationshipSelectorViews.delete(relationship.definitionId)
       dispatch({
         type: 'relationshipAttribute.delete',
         recordTypeDefinitionId: recordType.definitionId,
@@ -301,13 +302,12 @@ const createRelationshipAttributeRow = (
     },
   )
 
-  row.append(createLucideIcon(Link2, 'relationship-icon'), name, type, switchView, constraints, deleteButton)
-  if (selectorOpen) row.append(controls)
+  row.append(createLucideIcon(Link2, 'relationship-icon'), controls, type, constraints, deleteButton)
   return row
 }
 
 const createFixedSchemaRow = (name: string) => {
-  const row = document.createElement('div')
+  const row = document.createElement('li')
   row.className = 'attribute-row attribute-row-fixed schema-fixed-row'
   const field = document.createElement('strong')
   field.className = 'schema-attribute-name'
@@ -409,35 +409,36 @@ const renderRecordTypeDesigner = (
 
   const layout = document.createElement('div')
   layout.className = 'schema-layout'
-  const schema = document.createElement('section')
-  schema.className = 'schema-card'
-
-  const dataHeader = document.createElement('header')
-  dataHeader.className = 'attributes-header'
-  const dataTitle = document.createElement('h3')
-  dataTitle.className = 'attributes-title'
-  dataTitle.textContent = 'data'
-  dataHeader.append(dataTitle)
-
-  const fixedFields = document.createElement('div')
-  fixedFields.className = 'schema-fixed-fields'
-  fixedFields.append(createFixedSchemaRow('id'), createFixedSchemaRow('type'))
 
   const inheritedAttributes = inheritedFrom
     .filter(({ definitionId }) => definitionId !== rootRecordTypeDefinitionId)
     .flatMap((parent) =>
-      resolvedAttributesFor(parent).map((attribute) => ({ attribute, source: parent.name })),
+      attributesForInheritedDisplay(parent).map((attribute) => ({ attribute, source: parent.name })),
     )
   const recordAttributes = inheritedFrom
     .filter(({ definitionId }) => definitionId === rootRecordTypeDefinitionId)
     .flatMap((parent) =>
-      resolvedAttributesFor(parent).map((attribute) => ({ attribute, source: parent.name })),
+      attributesForInheritedDisplay(parent).map((attribute) => ({ attribute, source: parent.name })),
     )
+
+  const identitySection = document.createElement('section')
+  identitySection.className = 'schema-card'
+  const identityHeader = document.createElement('header')
+  identityHeader.className = 'attributes-header'
+  const identityTitle = document.createElement('h3')
+  identityTitle.className = 'attributes-title'
+  identityTitle.textContent = 'Identity'
+  identityHeader.append(identityTitle)
+  const identityList = document.createElement('ul')
+  identityList.className = 'attribute-list'
+  identityList.append(createFixedSchemaRow('id'), createFixedSchemaRow('type'))
+  identitySection.append(identityHeader, identityList)
+
   const attributesHeader = document.createElement('header')
   attributesHeader.className = 'attributes-header'
   const attributesTitle = document.createElement('h3')
   attributesTitle.className = 'attributes-title'
-  attributesTitle.textContent = 'data.attributes'
+  attributesTitle.textContent = 'Attributes'
   const addButton = document.createElement('button')
   addButton.className = 'tree-action'
   addButton.type = 'button'
@@ -468,7 +469,6 @@ const renderRecordTypeDesigner = (
       recordTypeDefinitionId: recordType.definitionId,
       definitionId: crypto.randomUUID(),
     }, false)
-    if (definitionId) relationshipSelectorViews.set(definitionId, true)
     render()
     requestAnimationFrame(() => {
       content
@@ -536,36 +536,11 @@ const renderRecordTypeDesigner = (
     attributeGroups.append(empty)
   }
 
-  const includedHeader = document.createElement('header')
-  includedHeader.className = 'attributes-header'
-  const includedTitle = document.createElement('h3')
-  includedTitle.className = 'attributes-title'
-  includedTitle.textContent = 'included'
-  includedHeader.append(includedTitle)
+  const attributesSection = document.createElement('section')
+  attributesSection.className = 'schema-card'
+  attributesSection.append(attributesHeader, attributeGroups)
 
-  const includedList = document.createElement('ul')
-  includedList.className = 'included-list'
-  const includedRecordTypes = includedRecordTypesFor(recordType)
-  for (const included of includedRecordTypes) {
-    const item = document.createElement('li')
-    item.className = 'included-record-row'
-    const name = document.createElement('span')
-    name.className = 'included-record-name'
-    name.textContent = included.recordType.name
-    item.append(createRecordTypeIcon(included.relationship), name)
-    includedList.append(item)
-  }
-  if (includedRecordTypes.length === 0) {
-    const empty = document.createElement('li')
-    empty.className = 'attributes-empty'
-    empty.textContent = 'No child record types to include.'
-    includedList.append(empty)
-  }
-
-  schema.append(dataHeader, fixedFields)
-  schema.append(attributesHeader, attributeGroups, includedHeader, includedList)
-
-  layout.append(schema)
+  layout.append(identitySection, attributesSection)
   content.append(header, layout)
 }
 

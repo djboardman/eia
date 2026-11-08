@@ -1,0 +1,33 @@
+.style-gallery {
+  display: grid;
+  gap: 1rem;
+  min-height: 100vh;
+  padding: 1rem;
+  background: #64748b;
+}
+
+.theme-preview {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.5rem;
+  color: var(--color-text-primary);
+  background: var(--color-canvas);
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.gallery-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 80rem) {
+  .style-gallery {
+    grid-template-columns: 1fr 1fr;
+  }
+}
